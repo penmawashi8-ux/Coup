@@ -76,5 +76,12 @@ export async function getRoom(id: string): Promise<GameState | null> {
 
 export async function setRoom(id: string, state: GameState): Promise<void> {
   getMemoryRooms().set(id, state);
-  if (useBlob()) await blobSet(id, state);
+  if (useBlob()) {
+    try {
+      await blobSet(id, state);
+    } catch (e) {
+      // Blob write failed — in-memory cache still holds state for this instance
+      console.error('[store] blob write failed:', e);
+    }
+  }
 }
