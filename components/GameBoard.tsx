@@ -50,8 +50,19 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
   const [selectedCards, setSelectedCards] = useState<string[]>([]);
   const [error, setError] = useState('');
+  const [ticker, setTicker] = useState<string>('');
   const logRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const prevLogLenRef = useRef(initialState.log.length);
+  const tickerQueueRef = useRef<string[]>([]);
+  const tickerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function drainTickerQueue() {
+    const next = tickerQueueRef.current.shift();
+    if (!next) { setTicker(''); tickerTimerRef.current = null; return; }
+    setTicker(next);
+    tickerTimerRef.current = setTimeout(drainTickerQueue, 1400);
+  }
 
   const me = state.players.find(p => p.id === playerId);
   const currentPlayer = state.players[state.currentPlayerIndex];
@@ -80,6 +91,16 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
     if (logRef.current) {
       logRef.current.scrollTop = logRef.current.scrollHeight;
     }
+  }, [state.log]);
+
+  // Queue new log entries for the ticker
+  useEffect(() => {
+    const newEntries = state.log.slice(prevLogLenRef.current);
+    prevLogLenRef.current = state.log.length;
+    if (newEntries.length === 0) return;
+    tickerQueueRef.current.push(...newEntries);
+    if (!tickerTimerRef.current) drainTickerQueue();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.log]);
 
   const prevPhaseRef = useRef<string>('');
@@ -414,6 +435,15 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
               </button>
 
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Action ticker */}
+      {ticker && (
+        <div className="fixed top-0 left-0 right-0 z-40 flex justify-center pointer-events-none">
+          <div className="mt-2 mx-4 bg-gray-800/95 border border-amber-500/60 text-amber-200 text-sm font-medium px-4 py-2 rounded-xl shadow-lg max-w-sm w-full text-center animate-pulse">
+            {ticker}
           </div>
         </div>
       )}
