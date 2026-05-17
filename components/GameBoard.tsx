@@ -212,8 +212,13 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
   const isWaitingMyReaction = state.phase === 'waiting_reactions' && playerId in (pa?.reactions ?? {}) && myReaction === null;
   const isWaitingMyBlockReaction = state.phase === 'waiting_block_reactions' && playerId in (pa?.blockReactions ?? {}) && myBlockReaction === null;
 
-  const isChallengedPlayer = state.phase === 'resolving_challenge' && pa &&
-    (!pa.challengeTargetIsBlock ? pa.actorId === playerId : pa.blockerId === playerId);
+  // Human is the challenged player in either challenge phase:
+  // - resolving_challenge: human is the actor whose action was challenged
+  // - resolving_block_challenge: human is the blocker whose block was challenged
+  const isChallengedPlayer = pa && (
+    (state.phase === 'resolving_challenge' && pa.actorId === playerId) ||
+    (state.phase === 'resolving_block_challenge' && pa.blockerId === playerId)
+  );
   const isLoseInfluencePlayer = state.phase === 'lose_influence' && pa?.currentLoseInfluenceEntry?.playerId === playerId;
   const isExchangePlayer = state.phase === 'exchange_select' && pa?.actorId === playerId;
 
