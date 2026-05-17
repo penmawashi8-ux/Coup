@@ -1,13 +1,23 @@
 'use client';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
-export default function Home() {
+function HomeInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [mode, setMode] = useState<'menu' | 'cpu' | 'online_create' | 'online_join'>('menu');
   const [name, setName] = useState('');
   const [cpuCount, setCpuCount] = useState(1);
   const [totalPlayers, setTotalPlayers] = useState(2);
+
+  useEffect(() => {
+    const join = searchParams.get('join');
+    if (join) {
+      setMode('online_join');
+      setRoomCode(join.toUpperCase());
+    }
+  }, [searchParams]);
   const [roomCode, setRoomCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -94,7 +104,7 @@ export default function Home() {
               🤖 CPU対戦
             </button>
             <button
-              onClick={() => setMode('online_create')}
+              onClick={() => { setMode('online_create'); setCpuCount(0); setTotalPlayers(2); }}
               className="w-full bg-blue-700 hover:bg-blue-600 text-white font-bold py-4 rounded-xl text-lg transition-colors"
             >
               🌐 オンライン対戦（ルーム作成）
@@ -112,12 +122,10 @@ export default function Home() {
           </div>
         )}
 
-        {(mode === 'cpu' || mode === 'online_create') && (
+        {mode === 'cpu' && (
           <div className="bg-gray-800 rounded-xl p-6 space-y-4">
             <button onClick={() => setMode('menu')} className="text-gray-400 hover:text-white text-sm">← 戻る</button>
-            <h2 className="text-white font-bold text-xl">
-              {mode === 'cpu' ? 'CPU対戦' : 'オンラインルーム作成'}
-            </h2>
+            <h2 className="text-white font-bold text-xl">CPU対戦</h2>
             <div>
               <label className="text-gray-300 text-sm block mb-1">あなたの名前</label>
               <input
@@ -127,36 +135,75 @@ export default function Home() {
                 className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:outline-none focus:border-amber-400"
               />
             </div>
-            {mode === 'online_create' && (
-              <div>
-                <label className="text-gray-300 text-sm block mb-1">合計プレイヤー数 (2〜6)</label>
-                <input
-                  type="number" min={2} max={6} value={totalPlayers}
-                  onChange={e => { const v = Number(e.target.value); setTotalPlayers(v); setCpuCount(c => Math.min(c, v - 1)); }}
-                  className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:outline-none focus:border-amber-400"
-                />
-              </div>
-            )}
             <div>
-              <label className="text-gray-300 text-sm block mb-1">
-                CPUプレイヤー数 ({mode === 'cpu' ? '1〜5' : `0〜${totalPlayers - 1}`})
-              </label>
+              <label className="text-gray-300 text-sm block mb-1">CPUプレイヤー数 (1〜5)</label>
               <input
-                type="number"
-                min={mode === 'cpu' ? 1 : 0}
-                max={mode === 'cpu' ? 5 : totalPlayers - 1}
-                value={cpuCount}
+                type="number" min={1} max={5} value={cpuCount}
                 onChange={e => setCpuCount(Number(e.target.value))}
                 className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:outline-none focus:border-amber-400"
               />
             </div>
             {error && <p className="text-red-400 text-sm">{error}</p>}
             <button
-              onClick={mode === 'cpu' ? startCPUGame : createOnlineRoom}
+              onClick={startCPUGame}
               disabled={loading}
               className="w-full bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-colors"
             >
-              {loading ? '作成中...' : mode === 'cpu' ? 'ゲーム開始' : 'ルーム作成'}
+              {loading ? '作成中...' : 'ゲーム開始'}
+            </button>
+          </div>
+        )}
+
+        {mode === 'online_create' && (
+          <div className="bg-gray-800 rounded-xl p-6 space-y-4">
+            <button onClick={() => setMode('menu')} className="text-gray-400 hover:text-white text-sm">← 戻る</button>
+            <h2 className="text-white font-bold text-xl">オンラインルーム作成</h2>
+            <div className="p-3 bg-blue-900/40 border border-blue-600 rounded-lg text-sm text-blue-200">
+              ルームを作成してコードを友達に共有。人数が足りない枠はCPUで補充できます。
+            </div>
+            <div>
+              <label className="text-gray-300 text-sm block mb-1">あなたの名前</label>
+              <input
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="プレイヤー名"
+                className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:outline-none focus:border-amber-400"
+              />
+            </div>
+            <div>
+              <label className="text-gray-300 text-sm block mb-1">合計プレイヤー数 (2〜6)</label>
+              <input
+                type="number" min={2} max={6} value={totalPlayers}
+                onChange={e => { const v = Number(e.target.value); setTotalPlayers(v); setCpuCount(c => Math.min(c, v - 1)); }}
+                className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:outline-none focus:border-amber-400"
+              />
+            </div>
+            <div>
+              <label className="text-gray-300 text-sm block mb-1">
+                CPUで補充する数 (0〜{totalPlayers - 1}) — 人間が来るまで空きをCPUで埋める
+              </label>
+              <input
+                type="number" min={0} max={totalPlayers - 1} value={cpuCount}
+                onChange={e => setCpuCount(Number(e.target.value))}
+                className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:outline-none focus:border-amber-400"
+              />
+              {cpuCount === 0 && (
+                <p className="text-gray-400 text-xs mt-1">→ 友達 {totalPlayers - 1} 人がルームコードで参加するまでロビーで待機します</p>
+              )}
+              {cpuCount > 0 && cpuCount < totalPlayers - 1 && (
+                <p className="text-gray-400 text-xs mt-1">→ 友達 {totalPlayers - 1 - cpuCount} 人 + CPU {cpuCount} 体 でゲーム開始</p>
+              )}
+              {cpuCount === totalPlayers - 1 && (
+                <p className="text-gray-400 text-xs mt-1">→ CPU {cpuCount} 体と1人でゲーム開始（ロビーなし）</p>
+              )}
+            </div>
+            {error && <p className="text-red-400 text-sm">{error}</p>}
+            <button
+              onClick={createOnlineRoom}
+              disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-colors"
+            >
+              {loading ? '作成中...' : 'ルーム作成'}
             </button>
           </div>
         )}
@@ -195,5 +242,13 @@ export default function Home() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense>
+      <HomeInner />
+    </Suspense>
   );
 }

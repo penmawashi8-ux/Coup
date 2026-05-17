@@ -183,19 +183,38 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
 
   if (state.phase === 'lobby') {
     const isHost = state.hostId === playerId;
+    const joinUrl = typeof window !== 'undefined'
+      ? `${window.location.origin}/?join=${roomId}`
+      : '';
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
         <div className="text-center max-w-sm w-full">
           <h1 className="text-4xl font-black text-amber-400 mb-6">COUP</h1>
           <div className="bg-gray-800 rounded-xl p-6 space-y-4">
-            <h2 className="text-white font-bold text-xl">ロビー</h2>
-            <div className="bg-black/40 rounded-lg p-4">
-              <p className="text-gray-400 text-sm mb-1">ルームコード</p>
-              <p className="text-amber-400 text-4xl font-mono font-bold tracking-widest">{roomId}</p>
-              <p className="text-gray-400 text-xs mt-2">このコードを友達に共有してください</p>
+            <h2 className="text-white font-bold text-xl">ロビー — 参加者を待っています</h2>
+            <div className="bg-black/40 rounded-lg p-4 space-y-3">
+              <div>
+                <p className="text-gray-400 text-xs mb-1">ルームコード</p>
+                <p className="text-amber-400 text-4xl font-mono font-bold tracking-widest">{roomId}</p>
+              </div>
+              <button
+                onClick={() => navigator.clipboard.writeText(roomId)}
+                className="w-full bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm py-2 rounded-lg"
+              >
+                コードをコピー
+              </button>
+              {joinUrl && (
+                <button
+                  onClick={() => navigator.clipboard.writeText(joinUrl)}
+                  className="w-full bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm py-2 rounded-lg"
+                >
+                  参加URLをコピー
+                </button>
+              )}
+              <p className="text-gray-500 text-xs">友達はホームの「ルームに参加」からコードを入力</p>
             </div>
-            <div className="space-y-2">
-              <p className="text-gray-400 text-sm">参加者</p>
+            <div className="space-y-2 text-left">
+              <p className="text-gray-400 text-sm">参加者 ({state.players.filter(p => !p.isCPU).length}人 / {state.players.length}枠)</p>
               {state.players.map(p => (
                 <div key={p.id} className="flex items-center gap-2 bg-gray-700 rounded px-3 py-2">
                   <span className="text-green-400">✓</span>
@@ -208,10 +227,9 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
             {isHost && (
               <button
                 onClick={() => sendAction({ type: 'start_game', playerId })}
-                disabled={state.players.filter(p => !p.isCPU).length < 1}
-                className="w-full bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl"
+                className="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 rounded-xl"
               >
-                ゲーム開始
+                ゲーム開始（今いるメンバーで）
               </button>
             )}
             {!isHost && <p className="text-gray-400 text-sm">ホストがゲームを開始するのを待っています...</p>}
