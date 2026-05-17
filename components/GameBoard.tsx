@@ -52,6 +52,7 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
   const [error, setError] = useState('');
   const [ticker, setTicker] = useState<string>('');
   const [showSummary, setShowSummary] = useState(false);
+  const [lobbyCpuCount, setLobbyCpuCount] = useState(0);
   const logRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const prevLogLenRef = useRef(initialState.log.length);
@@ -235,10 +236,15 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
     const joinUrl = typeof window !== 'undefined'
       ? `${window.location.origin}/?join=${roomId}`
       : '';
+    const humanCount = state.players.filter(p => !p.isCPU).length;
+    const cpuOptions = Array.from({ length: 6 }, (_, i) => i).filter(n => humanCount + n >= 2 && humanCount + n <= 6);
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
         <div className="text-center max-w-sm w-full">
-          <h1 className="text-4xl font-black text-amber-400 mb-6">COUP</h1>
+          <div className="flex items-center mb-6">
+            <a href="/" className="text-gray-400 hover:text-white text-sm">← 戻る</a>
+            <h1 className="text-4xl font-black text-amber-400 flex-1">COUP</h1>
+          </div>
           <div className="bg-gray-800 rounded-xl p-6 space-y-4">
             <h2 className="text-white font-bold text-xl">ロビー — 参加者を待っています</h2>
             <div className="bg-black/40 rounded-lg p-4 space-y-3">
@@ -275,12 +281,35 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
             </div>
             {error && <p className="text-red-400 text-sm bg-red-900/30 rounded p-2">{error}</p>}
             {isHost && (
-              <button
-                onClick={() => sendAction({ type: 'start_game', playerId })}
-                className="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 rounded-xl"
-              >
-                ゲーム開始（今いるメンバーで）
-              </button>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-gray-400 text-xs block mb-2">CPUを追加（空きを自動補充）</label>
+                  <div className="flex gap-2">
+                    {cpuOptions.map(n => (
+                      <button
+                        key={n}
+                        onClick={() => setLobbyCpuCount(n)}
+                        className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${
+                          lobbyCpuCount === n
+                            ? 'bg-amber-500 text-black'
+                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        }`}
+                      >
+                        {n === 0 ? 'なし' : `+${n}`}
+                      </button>
+                    ))}
+                  </div>
+                  {lobbyCpuCount > 0 && (
+                    <p className="text-gray-500 text-xs mt-1">合計 {humanCount + lobbyCpuCount}人でスタート</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => sendAction({ type: 'start_game', playerId, cpuCount: lobbyCpuCount })}
+                  className="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 rounded-xl"
+                >
+                  ゲーム開始
+                </button>
+              </div>
             )}
             {!isHost && <p className="text-gray-400 text-sm">ホストがゲームを開始するのを待っています...</p>}
           </div>
@@ -449,7 +478,10 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
 
       {/* Header */}
       <div className="bg-black/40 p-3 flex items-center justify-between">
-        <h1 className="text-amber-400 font-bold text-lg">COUP</h1>
+        <div className="flex items-center gap-2">
+          <a href="/" className="text-gray-500 hover:text-gray-300 text-xs px-1">← ホーム</a>
+          <h1 className="text-amber-400 font-bold text-lg">COUP</h1>
+        </div>
         <button
           onClick={() => setShowSummary(true)}
           className="text-gray-300 hover:text-amber-400 text-xs border border-gray-600 hover:border-amber-500 px-2 py-1 rounded transition-colors"

@@ -34,8 +34,7 @@ export function createGame(players: Array<{ id: string; name: string; isCPU: boo
   const deck = createDeck();
   const gamePlayers: Player[] = players.map((p, idx) => {
     const hand = [deck.shift()!, deck.shift()!];
-    // 2-player: first player gets 1 coin
-    const coins = players.length === 2 && idx === 0 ? 1 : 2;
+    const coins = 2;
     return {
       id: p.id,
       name: p.name,

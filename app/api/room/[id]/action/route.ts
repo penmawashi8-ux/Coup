@@ -28,7 +28,7 @@ type ActionBody = (
   | { type: 'resolve_challenge'; playerId: string; cardId: string }
   | { type: 'lose_influence'; playerId: string; cardId: string }
   | { type: 'exchange'; playerId: string; keptCardIds: string[] }
-  | { type: 'start_game'; playerId: string }
+  | { type: 'start_game'; playerId: string; cpuCount?: number }
 ) & { clientState?: GameState };
 
 function humanHasPendingReaction(reactions: Record<string, unknown>, players: GameState['players']): boolean {
@@ -163,9 +163,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         if (state.hostId !== body.playerId) {
           return NextResponse.json({ error: 'Only host can start' }, { status: 403 });
         }
-        // Auto-fill with CPUs to reach minimum 2 players
         const playerDefs = state.players.map(p => ({ id: p.id, name: p.name, isCPU: p.isCPU }));
         let cpuIdx = playerDefs.filter(p => p.isCPU).length + 1;
+        // Add requested CPUs from host, then ensure minimum 2 players
+        const requestedCPUs = body.cpuCount ?? 0;
+        for (let i = 0; i < requestedCPUs; i++) {
+          playerDefs.push({ id: uuidv4(), name: `CPU ${cpuIdx++}`, isCPU: true });
+        }
         while (playerDefs.length < 2) {
           playerDefs.push({ id: uuidv4(), name: `CPU ${cpuIdx++}`, isCPU: true });
         }
