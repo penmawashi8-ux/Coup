@@ -50,7 +50,7 @@ function HomeInner() {
       const res = await fetch('/api/room', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerName: name, cpuCount, totalPlayers }),
+        body: JSON.stringify({ playerName: name, mode: 'online' }),
       });
       const data = await res.json();
       router.push(`/game/${data.roomId}?pid=${data.playerId}&online=1`);
@@ -159,7 +159,7 @@ function HomeInner() {
             <button onClick={() => setMode('menu')} className="text-gray-400 hover:text-white text-sm">← 戻る</button>
             <h2 className="text-white font-bold text-xl">オンラインルーム作成</h2>
             <div className="p-3 bg-blue-900/40 border border-blue-600 rounded-lg text-sm text-blue-200">
-              ルームを作成してコードを友達に共有。人数が足りない枠はCPUで補充できます。
+              ルームを作ってコードを友達に共有。ゲーム開始時に人数が足りなければCPUが自動補充されます。
             </div>
             <div>
               <label className="text-gray-300 text-sm block mb-1">あなたの名前</label>
@@ -169,33 +169,6 @@ function HomeInner() {
                 placeholder="プレイヤー名"
                 className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:outline-none focus:border-amber-400"
               />
-            </div>
-            <div>
-              <label className="text-gray-300 text-sm block mb-1">合計プレイヤー数 (2〜6)</label>
-              <input
-                type="number" min={2} max={6} value={totalPlayers}
-                onChange={e => { const v = Number(e.target.value); setTotalPlayers(v); setCpuCount(c => Math.min(c, v - 1)); }}
-                className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:outline-none focus:border-amber-400"
-              />
-            </div>
-            <div>
-              <label className="text-gray-300 text-sm block mb-1">
-                CPUで補充する数 (0〜{totalPlayers - 1}) — 人間が来るまで空きをCPUで埋める
-              </label>
-              <input
-                type="number" min={0} max={totalPlayers - 1} value={cpuCount}
-                onChange={e => setCpuCount(Number(e.target.value))}
-                className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:outline-none focus:border-amber-400"
-              />
-              {cpuCount === 0 && (
-                <p className="text-gray-400 text-xs mt-1">→ 友達 {totalPlayers - 1} 人がルームコードで参加するまでロビーで待機します</p>
-              )}
-              {cpuCount > 0 && cpuCount < totalPlayers - 1 && (
-                <p className="text-gray-400 text-xs mt-1">→ 友達 {totalPlayers - 1 - cpuCount} 人 + CPU {cpuCount} 体 でゲーム開始</p>
-              )}
-              {cpuCount === totalPlayers - 1 && (
-                <p className="text-gray-400 text-xs mt-1">→ CPU {cpuCount} 体と1人でゲーム開始（ロビーなし）</p>
-              )}
             </div>
             {error && <p className="text-red-400 text-sm">{error}</p>}
             <button

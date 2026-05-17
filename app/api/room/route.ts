@@ -5,10 +5,10 @@ import { setRoom } from '@/lib/store';
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { playerName, cpuCount = 0, totalPlayers = 2 } = body as {
+  const { playerName, cpuCount = 0, mode = 'online' } = body as {
     playerName: string;
     cpuCount?: number;
-    totalPlayers?: number;
+    mode?: 'cpu' | 'online';
   };
 
   const roomId = uuidv4().slice(0, 6).toUpperCase();
@@ -18,21 +18,17 @@ export async function POST(req: Request) {
     { id: hostId, name: playerName, isCPU: false },
   ];
 
-  // Add CPU players immediately if specified
   for (let i = 0; i < cpuCount; i++) {
     players.push({ id: uuidv4(), name: `CPU ${i + 1}`, isCPU: true });
   }
 
   const state = createGame(players, hostId);
-  // Override phase to lobby if waiting for more human players
-  const humanSlots = totalPlayers - cpuCount;
-  if (humanSlots > 1) {
+
+  if (mode === 'online') {
     state.phase = 'lobby';
+    state.log = ['ルームを作成しました。友達の参加を待っています...'];
   }
-  // Store total player capacity info in log
-  state.log = [`Room created. Waiting for ${humanSlots} human player(s)...`];
 
   setRoom(roomId, state);
-
   return NextResponse.json({ roomId, playerId: hostId });
 }

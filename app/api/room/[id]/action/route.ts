@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { v4 as uuidv4 } from 'uuid';
 import { getRoom, setRoom } from '@/lib/store';
 import {
   declareAction,
@@ -9,6 +10,7 @@ import {
   completeExchange,
   getCurrentPlayer,
   getPlayer,
+  createGame,
 } from '@/lib/game-engine';
 import {
   cpuChooseAction,
@@ -144,8 +146,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         if (state.hostId !== body.playerId) {
           return NextResponse.json({ error: 'Only host can start' }, { status: 403 });
         }
-        const fresh = { ...state, phase: 'action_select' as const };
-        state = processCPUTurns(fresh);
+        // Auto-fill with CPUs to reach minimum 2 players
+        const playerDefs = state.players.map(p => ({ id: p.id, name: p.name, isCPU: p.isCPU }));
+        let cpuIdx = playerDefs.filter(p => p.isCPU).length + 1;
+        while (playerDefs.length < 2) {
+          playerDefs.push({ id: uuidv4(), name: `CPU ${cpuIdx++}`, isCPU: true });
+        }
+        const started = createGame(playerDefs, state.hostId);
+        started.id = state.id;
+        state = processCPUTurns(started);
         break;
       }
 

@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { getRoom, setRoom } from '@/lib/store';
-import { createGame } from '@/lib/game-engine';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -12,35 +11,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (state.phase !== 'lobby') return NextResponse.json({ error: 'Game already started' }, { status: 400 });
 
   const newPlayerId = uuidv4();
+
+  // Add the new human player (keep CPUs at the end)
   const humanPlayers = state.players.filter(p => !p.isCPU);
   const cpuPlayers = state.players.filter(p => p.isCPU);
+  const newPlayer = { id: newPlayerId, name: playerName, coins: 2, hand: [], revealed: [], isAlive: true, isCPU: false, connected: true };
 
-  const allPlayers = [
-    ...humanPlayers,
-    { id: newPlayerId, name: playerName, isCPU: false },
-    ...cpuPlayers,
-  ];
+  const updated = {
+    ...state,
+    players: [...humanPlayers, newPlayer, ...cpuPlayers],
+    log: [...state.log, `${playerName} が参加しました。`],
+    lastUpdated: Date.now(),
+  };
 
-  // Re-create game with new player list
-  const newState = createGame(
-    allPlayers.map(p => ({ id: p.id, name: p.name, isCPU: p.isCPU })),
-    state.hostId
-  );
-  newState.id = state.id;
-  newState.phase = 'lobby';
-
-  // Check if we have enough players to start (infer from original log)
-  // Start automatically if 2+ players
-  if (allPlayers.filter(p => !p.isCPU).length >= 2) {
-    const started = createGame(
-      allPlayers.map(p => ({ id: p.id, name: p.name, isCPU: p.isCPU })),
-      state.hostId
-    );
-    started.id = state.id;
-    setRoom(id, started);
-    return NextResponse.json({ playerId: newPlayerId, started: true });
-  }
-
-  setRoom(id, newState);
-  return NextResponse.json({ playerId: newPlayerId, started: false });
+  setRoom(id, updated);
+  return NextResponse.json({ playerId: newPlayerId });
 }
