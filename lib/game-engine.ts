@@ -365,10 +365,7 @@ function postChallengeResolution(s: GameState, challengerLost: boolean, isBlockC
   } else {
     // Challenged the action
     if (challengerLost) {
-      // Action still resolves (but check if block window needed)
-      if (canBlock(pa.type) && !pa.blockerId) {
-        return openBlockReactions(s);
-      }
+      // Action resolves — the block window was already open during initial reactions
       return resolveAction(s);
     } else {
       // Action fails
@@ -418,7 +415,6 @@ function handleContinuation(s: GameState): GameState {
 
   if (cont === 'action_fails') return actionFails(s);
   if (cont === 'resolve_action') {
-    if (canBlock(pa.type) && !pa.blockerId) return openBlockReactions(s);
     return resolveAction(s);
   }
   if (cont === 'challenge_won_block_fails') return resolveAction(s);

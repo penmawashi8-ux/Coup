@@ -91,9 +91,10 @@ function processCPUTurns(state: GameState): GameState {
 
     if (s.phase === 'resolving_block_challenge') {
       const pa = s.pendingAction!;
-      const blockerId = pa.blockerId!;
-      const blocker = getPlayer(s, blockerId)!;
-      if (!blocker.isCPU) break;
+      const blockerId = pa.blockerId;
+      if (!blockerId) break;
+      const blocker = getPlayer(s, blockerId);
+      if (!blocker || !blocker.isCPU) break;
       const requiredChar = pa.blockerClaimedCharacter!;
       const matchCard = blocker.hand.find(c => c.character === requiredChar);
       const cardId = matchCard?.id ?? blocker.hand[0]?.id;
