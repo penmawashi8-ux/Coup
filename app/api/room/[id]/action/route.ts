@@ -21,14 +21,15 @@ import {
 } from '@/lib/cpu-ai';
 import type { GameState, ActionType, ReactionType, Character } from '@/lib/types';
 
-type ActionBody =
+type ActionBody = (
   | { type: 'declare_action'; playerId: string; action: ActionType; targetId?: string }
   | { type: 'react'; playerId: string; reaction: ReactionType; blockCharacter?: Character }
   | { type: 'react_block'; playerId: string; reaction: 'challenge' | 'allow' }
   | { type: 'resolve_challenge'; playerId: string; cardId: string }
   | { type: 'lose_influence'; playerId: string; cardId: string }
   | { type: 'exchange'; playerId: string; keptCardIds: string[] }
-  | { type: 'start_game'; playerId: string };
+  | { type: 'start_game'; playerId: string }
+) & { clientState?: GameState };
 
 function processCPUTurns(state: GameState): GameState {
   let s = state;
@@ -133,6 +134,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const body = await req.json() as ActionBody;
 
   let state = await getRoom(id);
+  // CPU games pass clientState so the server works across cold serverless instances
+  if (!state && body.clientState) state = body.clientState;
   if (!state) return NextResponse.json({ error: 'Room not found' }, { status: 404 });
 
   try {

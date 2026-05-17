@@ -99,10 +99,12 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
     sounds.buttonClick();
     setError('');
     try {
+      // For CPU games, pass current state so the server works across cold serverless instances
+      const payload = isOnline ? body : { ...body, clientState: state };
       const res = await fetch(`/api/room/${roomId}/action`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const err = await res.json();
