@@ -63,7 +63,9 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
     const next = tickerQueueRef.current.shift();
     if (!next) { setTicker(''); tickerTimerRef.current = null; return; }
     setTicker(next);
-    tickerTimerRef.current = setTimeout(drainTickerQueue, 1400);
+    // Give more time for important events (challenges, eliminations, victories)
+    const isImportant = /チャレンジ|脱落|公開|ブロック|勝利/.test(next);
+    tickerTimerRef.current = setTimeout(drainTickerQueue, isImportant ? 2400 : 1600);
   }
 
   const me = state.players.find(p => p.id === playerId);

@@ -352,6 +352,12 @@ export function resolveChallenge(
 }
 
 function postChallengeResolution(s: GameState, challengerLost: boolean, isBlockChallenge: boolean): GameState {
+  // If the challenged player just eliminated the last opponent, end the game now
+  // rather than trying to resolve the original action on a dead target.
+  if (getAlivePlayers(s).length <= 1) {
+    s.pendingAction = null;
+    return advanceTurn(s);
+  }
   const pa = s.pendingAction!;
   if (isBlockChallenge) {
     if (challengerLost) {
@@ -517,6 +523,12 @@ function openLoseInfluence(
       challengeTargetIsBlock: false,
       loseInfluenceQueue: [],
     };
+  }
+
+  // Target already eliminated — skip (can happen when the challenger dies first)
+  if (target.hand.length === 0) {
+    s.pendingAction = null;
+    return advanceTurn(s);
   }
 
   if (target.hand.length === 1) {
