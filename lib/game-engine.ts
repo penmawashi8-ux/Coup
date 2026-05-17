@@ -55,7 +55,7 @@ export function createGame(players: Array<{ id: string; name: string; isCPU: boo
     deck,
     currentPlayerIndex: 0,
     pendingAction: null,
-    log: ['Game started!'],
+    log: ['ゲーム開始！'],
     winner: null,
     createdAt: Date.now(),
     lastUpdated: Date.now(),
@@ -137,24 +137,24 @@ export function declareAction(
   actor.coins -= coinCost;
 
   const actionNames: Record<ActionType, string> = {
-    income: 'Income',
-    foreign_aid: 'Foreign Aid',
-    coup: 'Coup',
-    tax: '徴収 (奉行)',
-    assassinate: '暗殺 (忍者)',
-    steal: '強奪 (盗賊)',
-    exchange: '探索 (密偵)',
+    income: '収入',
+    foreign_aid: '外国援助',
+    coup: 'クーデター',
+    tax: '徴収（奉行）',
+    assassinate: '暗殺（忍者）',
+    steal: '強奪（盗賊）',
+    exchange: '探索（密偵）',
   };
-  addLog(s, `${actor.name} declares ${actionNames[action]}${target ? ` against ${target.name}` : ''}.`);
+  addLog(s, `${actor.name} が ${actionNames[action]}${target ? `（対象: ${target.name}）` : ''} を宣言`);
 
   // Income and Coup resolve immediately
   if (action === 'income' || action === 'coup') {
     s.pendingAction = null;
     if (action === 'income') {
       actor.coins += 1;
-      addLog(s, `${actor.name} takes 1 coin. (${actor.coins} coins)`);
+      addLog(s, `${actor.name} が収入 +1コイン（計${actor.coins}コイン）`);
     } else {
-      addLog(s, `${actor.name} launches Coup against ${target!.name}!`);
+      addLog(s, `${actor.name} が ${target!.name} にクーデター！`);
       return openLoseInfluence(s, target!.id, 'Coup', actorId, action, coinCost);
     }
     return advanceTurn(s);
@@ -203,14 +203,14 @@ export function submitReaction(
     pa.blockerId = playerId;
     pa.blockerClaimedCharacter = blockCharacter;
     const blocker = getPlayer(s, playerId)!;
-    addLog(s, `${blocker.name} blocks${blockCharacter ? ` (claiming ${blockCharacter})` : ''}.`);
+    addLog(s, `${blocker.name} が${blockCharacter ? `【${blockCharacter}】で` : ''}ブロック！`);
     // Override remaining reactions to 'allow' - first block wins
     for (const id of Object.keys(pa.reactions)) {
       if (pa.reactions[id] === null) pa.reactions[id] = 'allow';
     }
   } else if (reaction === 'challenge') {
     const challenger = getPlayer(s, playerId)!;
-    addLog(s, `${challenger.name} challenges!`);
+    addLog(s, `${challenger.name} がチャレンジ！`);
     // Mark remaining as allow
     for (const id of Object.keys(pa.reactions)) {
       if (pa.reactions[id] === null) pa.reactions[id] = 'allow';
@@ -271,7 +271,7 @@ export function submitBlockReaction(
 
   if (reaction === 'challenge') {
     const challenger = getPlayer(s, playerId)!;
-    addLog(s, `${challenger.name} challenges the block!`);
+    addLog(s, `${challenger.name} がブロックにチャレンジ！`);
     for (const id of Object.keys(pa.blockReactions)) {
       if (pa.blockReactions[id] === null) pa.blockReactions[id] = 'allow';
     }
@@ -312,7 +312,7 @@ export function resolveChallenge(
 
   if (hasCard) {
     // Challenged player wins: challenger loses influence
-    addLog(s, `${challengedPlayer.name} reveals ${card!.character}. Challenge fails! ${challenger.name} loses an influence.`);
+    addLog(s, `✅ ${challengedPlayer.name} が【${card!.character}】を公開 → チャレンジ失敗！${challenger.name} が影響力を失う`);
     // Swap challenged player's card back to deck
     challengedPlayer.hand = challengedPlayer.hand.filter(c => c.id !== revealCardId);
     s.deck = shuffle([...s.deck, card!]);
@@ -326,7 +326,7 @@ export function resolveChallenge(
       challenger.revealed.push(lostCard);
       challenger.hand = [];
       challenger.isAlive = false;
-      addLog(s, `${challenger.name} reveals ${lostCard.character} and is eliminated!`);
+      addLog(s, `${challenger.name} が【${lostCard.character}】を公開して脱落！`);
       return postChallengeResolution(s, true, isBlockChallenge);
     } else {
       pa.loseInfluenceQueue = [{ playerId: challengerId, reason: 'Lost challenge' }];
@@ -335,14 +335,14 @@ export function resolveChallenge(
     }
   } else {
     // Challenged player loses: they lose influence
-    addLog(s, `${challengedPlayer.name} cannot show ${requiredChar}. Challenge succeeds! ${challengedPlayer.name} loses an influence.`);
+    addLog(s, `❌ ${challengedPlayer.name} は【${requiredChar}】を持っていなかった → チャレンジ成功！${challengedPlayer.name} が影響力を失う`);
 
     if (challengedPlayer.hand.length === 1) {
       const lostCard = challengedPlayer.hand[0];
       challengedPlayer.revealed.push(lostCard);
       challengedPlayer.hand = [];
       challengedPlayer.isAlive = false;
-      addLog(s, `${challengedPlayer.name} reveals ${lostCard.character} and is eliminated!`);
+      addLog(s, `${challengedPlayer.name} が【${lostCard.character}】を公開して脱落！`);
       return postChallengeResolution(s, false, isBlockChallenge);
     } else {
       pa.loseInfluenceQueue = [{ playerId: challengedPlayerId, reason: 'Lost challenge' }];
@@ -400,9 +400,9 @@ export function chooseLoseInfluence(state: GameState, playerId: string, cardId: 
   player.revealed.push(card);
   if (player.hand.length === 0) {
     player.isAlive = false;
-    addLog(s, `${player.name} reveals ${card.character} and is eliminated!`);
+    addLog(s, `${player.name} が【${card.character}】を公開して脱落！`);
   } else {
-    addLog(s, `${player.name} reveals ${card.character} and loses an influence.`);
+    addLog(s, `${player.name} が【${card.character}】を公開（影響力-1）`);
   }
 
   pa.currentLoseInfluenceEntry = undefined;
@@ -435,7 +435,7 @@ function handleContinuation(s: GameState): GameState {
 function resolveBlocked(s: GameState): GameState {
   const pa = s.pendingAction!;
   const actor = getPlayer(s, pa.actorId)!;
-  addLog(s, `Action blocked. ${actor.name}'s coins paid remain spent.`);
+  addLog(s, `アクションがブロックされた（${actor.name} のコインは消費のまま）`);
   s.pendingAction = null;
   return advanceTurn(s);
 }
@@ -446,9 +446,9 @@ function actionFails(s: GameState): GameState {
   // Return coins for paid actions that were challenged successfully
   if (pa.coinCost > 0) {
     actor.coins += pa.coinCost;
-    addLog(s, `Action failed. ${actor.name} gets back ${pa.coinCost} coin(s).`);
+    addLog(s, `アクション失敗 → ${actor.name} に${pa.coinCost}コイン返還`);
   } else {
-    addLog(s, `Action failed.`);
+    addLog(s, `アクション失敗`);
   }
   s.pendingAction = null;
   return advanceTurn(s);
@@ -462,13 +462,13 @@ function resolveAction(s: GameState): GameState {
   switch (pa.type) {
     case 'foreign_aid':
       actor.coins += 2;
-      addLog(s, `${actor.name} takes 2 coins via Foreign Aid. (${actor.coins} coins)`);
+      addLog(s, `${actor.name} が外国援助 +2コイン（計${actor.coins}コイン）`);
       s.pendingAction = null;
       return advanceTurn(s);
 
     case 'tax':
       actor.coins += 3;
-      addLog(s, `${actor.name} takes 3 coins via Tax. (${actor.coins} coins)`);
+      addLog(s, `${actor.name} が徴収 +3コイン（計${actor.coins}コイン）`);
       s.pendingAction = null;
       return advanceTurn(s);
 
@@ -476,19 +476,19 @@ function resolveAction(s: GameState): GameState {
       const stolen = Math.min(2, target!.coins);
       target!.coins -= stolen;
       actor.coins += stolen;
-      addLog(s, `${actor.name} steals ${stolen} coin(s) from ${target!.name}.`);
+      addLog(s, `${actor.name} が ${target!.name} から${stolen}コイン強奪！`);
       s.pendingAction = null;
       return advanceTurn(s);
     }
 
     case 'assassinate':
-      addLog(s, `${actor.name} assassinates ${target!.name}!`);
-      return openLoseInfluence(s, target!.id, 'Assassination', pa.actorId, pa.type, pa.coinCost);
+      addLog(s, `${actor.name} が ${target!.name} を暗殺！`);
+      return openLoseInfluence(s, target!.id, '暗殺', pa.actorId, pa.type, pa.coinCost);
 
     case 'exchange': {
       const drawn = [s.deck.shift()!, s.deck.shift()!];
       pa.exchangeDrawnCards = drawn;
-      addLog(s, `${actor.name} draws 2 cards from the Court for exchange.`);
+      addLog(s, `${actor.name} が探索（Court山から2枚引く）`);
       s.phase = 'exchange_select';
       return s;
     }
@@ -525,7 +525,7 @@ function openLoseInfluence(
     target.hand = [];
     target.revealed.push(lostCard);
     target.isAlive = false;
-    addLog(s, `${target.name} reveals ${lostCard.character} and is eliminated!`);
+    addLog(s, `${target.name} が【${lostCard.character}】を公開して脱落！`);
     s.pendingAction = null;
     return advanceTurn(s);
   }
@@ -550,7 +550,7 @@ export function completeExchange(state: GameState, actorId: string, keptCardIds:
 
   actor.hand = kept;
   s.deck = shuffle([...s.deck, ...returned]);
-  addLog(s, `${actor.name} completes the exchange.`);
+  addLog(s, `${actor.name} が探索を完了（カード交換）`);
   s.pendingAction = null;
   return advanceTurn(s);
 }
@@ -562,7 +562,7 @@ function advanceTurn(s: GameState): GameState {
     s.phase = 'game_over';
     if (s.winner) {
       const w = getPlayer(s, s.winner)!;
-      addLog(s, `${w.name} wins the game!`);
+      addLog(s, `🏆 ${w.name} の勝利！`);
     }
     return s;
   }
@@ -577,7 +577,7 @@ function advanceTurn(s: GameState): GameState {
   // Check 10+ coin rule
   const current = s.players[idx];
   if (current.coins >= 10) {
-    addLog(s, `${current.name} has ${current.coins} coins and MUST launch a Coup!`);
+    addLog(s, `⚠️ ${current.name} は${current.coins}コインのためクーデター必須！`);
   }
 
   s.phase = 'action_select';

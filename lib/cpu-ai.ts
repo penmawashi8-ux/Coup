@@ -162,12 +162,12 @@ export function cpuChooseBlockReaction(
 
 export function cpuChooseLoseInfluence(state: GameState, cpuId: string): string {
   const cpu = getPlayer(state, cpuId)!;
-  // Lose the card that is least useful
+  // Lose the card that is least useful — sort most dispensable first (highest index)
   const priority: Character[] = ['姫', '奉行', '密偵', '盗賊', '忍者'];
   const sorted = [...cpu.hand].sort((a, b) => {
     return priority.indexOf(b.character) - priority.indexOf(a.character);
   });
-  return sorted[sorted.length - 1]?.id ?? cpu.hand[0].id;
+  return sorted[0]?.id ?? cpu.hand[0].id;
 }
 
 export function cpuChooseExchangeCards(state: GameState, cpuId: string, allCards: Card[]): string[] {
