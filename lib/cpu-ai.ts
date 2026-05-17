@@ -53,16 +53,16 @@ export function cpuChooseAction(state: GameState): {
   }
 
   // Use actual character abilities
-  if (hasCharacter(actor, 'Assassin') && actor.coins >= 3 && available.includes('assassinate')) {
+  if (hasCharacter(actor, '忍者') && actor.coins >= 3 && available.includes('assassinate')) {
     const target = pickTarget(state, actor.id);
     return { action: 'assassinate', targetId: target.id };
   }
 
-  if (hasCharacter(actor, 'Duke') && available.includes('tax')) {
+  if (hasCharacter(actor, '奉行') && available.includes('tax')) {
     return { action: 'tax' };
   }
 
-  if (hasCharacter(actor, 'Captain') && available.includes('steal')) {
+  if (hasCharacter(actor, '盗賊') && available.includes('steal')) {
     const targets = getAlivePlayers(state).filter(p => p.id !== actor.id && p.coins >= 1);
     if (targets.length > 0) {
       const target = targets.sort((a, b) => b.coins - a.coins)[0];
@@ -70,7 +70,7 @@ export function cpuChooseAction(state: GameState): {
     }
   }
 
-  if (hasCharacter(actor, 'Ambassador') && available.includes('exchange')) {
+  if (hasCharacter(actor, '密偵') && available.includes('exchange')) {
     // Exchange if hand has weak cards
     return { action: 'exchange' };
   }
@@ -108,7 +108,7 @@ export function cpuChooseReaction(
     // Bluff block sometimes (especially as target when being assassinated)
     if (pa.type === 'assassinate' && cpuId === pa.targetId) {
       if (rand(3) === 0) {
-        return { reaction: 'block', blockCharacter: 'Contessa' };
+        return { reaction: 'block', blockCharacter: '姫' };
       }
     }
   }
@@ -163,7 +163,7 @@ export function cpuChooseBlockReaction(
 export function cpuChooseLoseInfluence(state: GameState, cpuId: string): string {
   const cpu = getPlayer(state, cpuId)!;
   // Lose the card that is least useful
-  const priority: Character[] = ['Contessa', 'Duke', 'Ambassador', 'Captain', 'Assassin'];
+  const priority: Character[] = ['姫', '奉行', '密偵', '盗賊', '忍者'];
   const sorted = [...cpu.hand].sort((a, b) => {
     return priority.indexOf(b.character) - priority.indexOf(a.character);
   });
@@ -173,7 +173,7 @@ export function cpuChooseLoseInfluence(state: GameState, cpuId: string): string 
 export function cpuChooseExchangeCards(state: GameState, cpuId: string, allCards: Card[]): string[] {
   const cpu = getPlayer(state, cpuId)!;
   const handSize = cpu.hand.length;
-  const priority: Character[] = ['Assassin', 'Duke', 'Captain', 'Ambassador', 'Contessa'];
+  const priority: Character[] = ['忍者', '奉行', '盗賊', '密偵', '姫'];
   const sorted = [...allCards].sort((a, b) => {
     return priority.indexOf(a.character) - priority.indexOf(b.character);
   });

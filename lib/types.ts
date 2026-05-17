@@ -1,4 +1,4 @@
-export type Character = 'Duke' | 'Assassin' | 'Captain' | 'Ambassador' | 'Contessa';
+export type Character = '奉行' | '忍者' | '盗賊' | '密偵' | '姫';
 
 export type ActionType =
   | 'income'

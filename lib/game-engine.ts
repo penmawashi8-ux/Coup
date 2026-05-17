@@ -9,7 +9,7 @@ import type {
   ReactionType,
 } from './types';
 
-const CHARACTERS: Character[] = ['Duke', 'Assassin', 'Captain', 'Ambassador', 'Contessa'];
+const CHARACTERS: Character[] = ['奉行', '忍者', '盗賊', '密偵', '姫'];
 
 export function createDeck(): Card[] {
   const cards: Card[] = [];
@@ -88,10 +88,10 @@ export function isCharacterAction(action: ActionType): boolean {
 
 export function getClaimedCharacter(action: ActionType): Character | undefined {
   const map: Partial<Record<ActionType, Character>> = {
-    tax: 'Duke',
-    assassinate: 'Assassin',
-    steal: 'Captain',
-    exchange: 'Ambassador',
+    tax: '奉行',
+    assassinate: '忍者',
+    steal: '盗賊',
+    exchange: '密偵',
   };
   return map[action];
 }
@@ -102,9 +102,9 @@ export function canBlock(action: ActionType): boolean {
 
 export function getBlockCharacters(action: ActionType): Character[] {
   const map: Partial<Record<ActionType, Character[]>> = {
-    foreign_aid: ['Duke'],
-    assassinate: ['Contessa'],
-    steal: ['Ambassador', 'Captain'],
+    foreign_aid: ['奉行'],
+    assassinate: ['姫'],
+    steal: ['密偵', '盗賊'],
   };
   return map[action] ?? [];
 }
@@ -140,10 +140,10 @@ export function declareAction(
     income: 'Income',
     foreign_aid: 'Foreign Aid',
     coup: 'Coup',
-    tax: 'Tax (Duke)',
-    assassinate: 'Assassinate (Assassin)',
-    steal: 'Steal (Captain)',
-    exchange: 'Exchange (Ambassador)',
+    tax: '徴収 (奉行)',
+    assassinate: '暗殺 (忍者)',
+    steal: '強奪 (盗賊)',
+    exchange: '探索 (密偵)',
   };
   addLog(s, `${actor.name} declares ${actionNames[action]}${target ? ` against ${target.name}` : ''}.`);
 

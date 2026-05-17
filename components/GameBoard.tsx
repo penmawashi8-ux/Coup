@@ -16,28 +16,28 @@ const ACTION_LABELS: Record<ActionType, string> = {
   income: '収入 (1コイン)',
   foreign_aid: '外国援助 (2コイン)',
   coup: 'クーデター (7コイン)',
-  tax: '徴税・Duke (3コイン)',
-  assassinate: '暗殺・Assassin (3コイン)',
-  steal: '窃盗・Captain (2コイン盗む)',
-  exchange: 'カード交換・Ambassador',
+  tax: '徴収・奉行 (3コイン)',
+  assassinate: '暗殺・忍者 (3コイン)',
+  steal: '強奪・盗賊 (2コイン盗む)',
+  exchange: '探索・密偵',
 };
 
 const ACTION_DESC: Record<ActionType, string> = {
   income: '財務省から1コイン取る。妨害不可。',
-  foreign_aid: '財務省から2コイン取る。Dukeがいるとブロック可。',
+  foreign_aid: '財務省から2コイン取る。奉行がいるとブロック可。',
   coup: '7コイン支払い、対象プレイヤーの影響力1つを除去。',
-  tax: 'Duke役を主張し、財務省から3コイン取る。',
-  assassinate: '3コイン支払い、対象の影響力1つを除去。Contessaでブロック可。',
-  steal: 'Captain役を主張し、対象から2コイン盗む。Ambassador/Captainでブロック可。',
-  exchange: 'Ambassador役を主張し、Court山から2枚引いてカードを交換する。',
+  tax: '奉行役を主張し、財務省から3コイン取る。',
+  assassinate: '3コイン支払い、対象の影響力1つを除去。姫でブロック可。',
+  steal: '盗賊役を主張し、対象から2コイン盗む。密偵/盗賊でブロック可。',
+  exchange: '密偵役を主張し、Court山から2枚引いてカードを交換する。',
 };
 
 const CHAR_LABELS: Record<Character, string> = {
-  Duke: 'Duke (公爵)',
-  Assassin: 'Assassin (暗殺者)',
-  Captain: 'Captain (船長)',
-  Ambassador: 'Ambassador (大使)',
-  Contessa: 'Contessa (伯爵夫人)',
+  奉行: '奉行 (徴収・外国援助ブロック)',
+  忍者: '忍者 (暗殺)',
+  盗賊: '盗賊 (強奪・強奪ブロック)',
+  密偵: '密偵 (探索・強奪ブロック)',
+  姫: '姫 (暗殺ブロック)',
 };
 
 function coin(n: number) {
@@ -195,10 +195,10 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
     if (!pa) return [];
     const { type, targetId, actorId } = pa;
     if (!['foreign_aid', 'assassinate', 'steal'].includes(type)) return [];
-    if (type === 'foreign_aid' && playerId !== actorId) return ['Duke'] as Character[];
+    if (type === 'foreign_aid' && playerId !== actorId) return ['奉行'] as Character[];
     if ((type === 'assassinate' || type === 'steal') && playerId === targetId) {
-      if (type === 'assassinate') return ['Contessa'] as Character[];
-      return ['Ambassador', 'Captain'] as Character[];
+      if (type === 'assassinate') return ['姫'] as Character[];
+      return ['密偵', '盗賊'] as Character[];
     }
     return [];
   };
@@ -307,9 +307,9 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
               <h2 className="text-amber-400 font-bold text-lg">ルール早見表</h2>
               <button
                 onClick={() => setShowSummary(false)}
-                className="text-gray-400 hover:text-white text-3xl leading-none w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-700"
+                className="bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold px-3 py-1.5 rounded-full"
               >
-                ×
+                × 閉じる
               </button>
             </div>
             {/* Scrollable content */}
@@ -321,7 +321,7 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
                 <div className="space-y-1">
                   {[
                     { name: '収入', cost: '', effect: '財務省から 1コイン取る', block: '×', challenge: '×' },
-                    { name: '外国援助', cost: '', effect: '財務省から 2コイン取る', block: 'Duke', challenge: '×' },
+                    { name: '外国援助', cost: '', effect: '財務省から 2コイン取る', block: '奉行', challenge: '×' },
                     { name: 'クーデター', cost: '7💰', effect: '対象の影響力1つを強制除去（必ず成功）', block: '×', challenge: '×', note: '10コイン以上は必ずこれ' },
                   ].map(a => (
                     <div key={a.name} className="bg-gray-800 rounded-lg px-3 py-2 flex gap-3 items-start">
@@ -344,10 +344,10 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
                 <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">キャラクターアクション（チャレンジされる可能性あり）</h3>
                 <div className="space-y-1">
                   {[
-                    { char: 'Duke', color: 'bg-purple-900 border-purple-600', symbol: '★', action: '徴税', cost: '', effect: '財務省から 3コイン取る', block: '—', challenge: '可' },
-                    { char: 'Assassin', color: 'bg-gray-800 border-gray-500', symbol: '☠', action: '暗殺', cost: '3💰', effect: '対象の影響力1つを除去', block: 'Contessa（対象のみ）', challenge: '可' },
-                    { char: 'Captain', color: 'bg-blue-900 border-blue-600', symbol: '⚓', action: '窃盗', cost: '', effect: '対象から 2コイン盗む（1枚以下なら全部）', block: 'Ambassador / Captain（対象のみ）', challenge: '可' },
-                    { char: 'Ambassador', color: 'bg-amber-900 border-amber-600', symbol: '◆', action: '交換', cost: '', effect: 'Court山から2枚引いて、手札と好きに交換し2枚返す', block: '—', challenge: '可' },
+                    { char: '奉行', color: 'bg-purple-900 border-purple-600', symbol: '★', action: '徴収', cost: '', effect: '財務省から 3コイン取る', block: '—', challenge: '可' },
+                    { char: '忍者', color: 'bg-gray-800 border-gray-500', symbol: '☠', action: '暗殺', cost: '3💰', effect: '対象の影響力1つを除去', block: '姫（対象のみ）', challenge: '可' },
+                    { char: '盗賊', color: 'bg-blue-900 border-blue-600', symbol: '⚓', action: '強奪', cost: '', effect: '対象から 2コイン盗む（1枚以下なら全部）', block: '密偵 / 盗賊（対象のみ）', challenge: '可' },
+                    { char: '密偵', color: 'bg-amber-900 border-amber-600', symbol: '◆', action: '探索', cost: '', effect: 'Court山から2枚引いて、手札と好きに交換し2枚返す', block: '—', challenge: '可' },
                   ].map(a => (
                     <div key={a.char} className={`rounded-lg border px-3 py-2 ${a.color}`}>
                       <div className="flex items-center gap-2 mb-1">
@@ -368,10 +368,10 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
                 <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">ブロック（カウンターアクション）</h3>
                 <div className="bg-gray-800 rounded-lg divide-y divide-gray-700">
                   {[
-                    { blocker: 'Duke ★', blocks: '外国援助', who: '誰でも', color: 'text-purple-400' },
-                    { blocker: 'Contessa ♛', blocks: '暗殺', who: '対象プレイヤーのみ', color: 'text-red-400' },
-                    { blocker: 'Ambassador ◆', blocks: '窃盗', who: '対象プレイヤーのみ', color: 'text-amber-400' },
-                    { blocker: 'Captain ⚓', blocks: '窃盗', who: '対象プレイヤーのみ', color: 'text-blue-400' },
+                    { blocker: '奉行 ★', blocks: '外国援助', who: '誰でも', color: 'text-purple-400' },
+                    { blocker: '姫 ♛', blocks: '暗殺', who: '対象プレイヤーのみ', color: 'text-red-400' },
+                    { blocker: '密偵 ◆', blocks: '強奪', who: '対象プレイヤーのみ', color: 'text-amber-400' },
+                    { blocker: '盗賊 ⚓', blocks: '強奪', who: '対象プレイヤーのみ', color: 'text-blue-400' },
                   ].map(b => (
                     <div key={b.blocker + b.blocks} className="px-3 py-2 flex items-center gap-2">
                       <span className={`font-semibold min-w-[130px] ${b.color}`}>{b.blocker}</span>
@@ -403,6 +403,13 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
                   <p className="text-amber-300 font-semibold">最後に残った1人が勝利</p>
                 </div>
               </section>
+
+              <button
+                onClick={() => setShowSummary(false)}
+                className="w-full mt-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-4 rounded-xl text-base"
+              >
+                閉じる
+              </button>
 
             </div>
           </div>
@@ -669,7 +676,7 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
               </p>
             )}
             {state.phase === 'exchange_select' && !isExchangePlayer && (
-              <p className="text-gray-400 text-sm">Ambassador が交換を選んでいます...</p>
+              <p className="text-gray-400 text-sm">密偵 が探索を選んでいます...</p>
             )}
           </div>
 
