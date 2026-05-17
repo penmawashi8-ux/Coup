@@ -288,12 +288,129 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
     );
   }
 
+  const [showSummary, setShowSummary] = useState(false);
+
   return (
     <div className="min-h-screen bg-gray-900 text-white">
+      {/* Summary Modal */}
+      {showSummary && (
+        <div
+          className="fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={() => setShowSummary(false)}
+        >
+          <div
+            className="bg-gray-900 border border-gray-700 rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg max-h-[90vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-gray-900 border-b border-gray-700 px-4 py-3 flex items-center justify-between">
+              <h2 className="text-amber-400 font-bold text-lg">ルール早見表</h2>
+              <button onClick={() => setShowSummary(false)} className="text-gray-400 hover:text-white text-2xl leading-none">×</button>
+            </div>
+            <div className="p-4 space-y-5 text-sm">
+
+              {/* General Actions */}
+              <section>
+                <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">一般アクション（常に使用可）</h3>
+                <div className="space-y-1">
+                  {[
+                    { name: '収入', cost: '', effect: '財務省から 1コイン取る', block: '×', challenge: '×' },
+                    { name: '外国援助', cost: '', effect: '財務省から 2コイン取る', block: 'Duke', challenge: '×' },
+                    { name: 'クーデター', cost: '7💰', effect: '対象の影響力1つを強制除去（必ず成功）', block: '×', challenge: '×', note: '10コイン以上は必ずこれ' },
+                  ].map(a => (
+                    <div key={a.name} className="bg-gray-800 rounded-lg px-3 py-2 flex gap-3 items-start">
+                      <div className="min-w-[80px]">
+                        <span className="text-white font-semibold">{a.name}</span>
+                        {a.cost && <span className="text-amber-400 text-xs ml-1">{a.cost}</span>}
+                      </div>
+                      <div className="flex-1 text-gray-300">{a.effect}</div>
+                      <div className="text-right text-xs space-y-0.5 shrink-0">
+                        <div className={a.block === '×' ? 'text-gray-600' : 'text-blue-400'}>🛡 {a.block}</div>
+                        <div className={a.challenge === '×' ? 'text-gray-600' : 'text-red-400'}>⚔ {a.challenge}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* Character Actions */}
+              <section>
+                <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">キャラクターアクション（チャレンジされる可能性あり）</h3>
+                <div className="space-y-1">
+                  {[
+                    { char: 'Duke', color: 'bg-purple-900 border-purple-600', symbol: '★', action: '徴税', cost: '', effect: '財務省から 3コイン取る', block: '—', challenge: '可' },
+                    { char: 'Assassin', color: 'bg-gray-800 border-gray-500', symbol: '☠', action: '暗殺', cost: '3💰', effect: '対象の影響力1つを除去', block: 'Contessa（対象のみ）', challenge: '可' },
+                    { char: 'Captain', color: 'bg-blue-900 border-blue-600', symbol: '⚓', action: '窃盗', cost: '', effect: '対象から 2コイン盗む（1枚以下なら全部）', block: 'Ambassador / Captain（対象のみ）', challenge: '可' },
+                    { char: 'Ambassador', color: 'bg-amber-900 border-amber-600', symbol: '◆', action: '交換', cost: '', effect: 'Court山から2枚引いて、手札と好きに交換し2枚返す', block: '—', challenge: '可' },
+                  ].map(a => (
+                    <div key={a.char} className={`rounded-lg border px-3 py-2 ${a.color}`}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-lg">{a.symbol}</span>
+                        <span className="text-white font-bold">{a.char}</span>
+                        <span className="text-gray-300 font-semibold">→ {a.action}</span>
+                        {a.cost && <span className="text-amber-400 text-xs">{a.cost}</span>}
+                      </div>
+                      <p className="text-gray-300 text-xs ml-7">{a.effect}</p>
+                      {a.block !== '—' && <p className="text-blue-300 text-xs ml-7 mt-0.5">🛡 ブロック: {a.block}</p>}
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* Counteractions */}
+              <section>
+                <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">ブロック（カウンターアクション）</h3>
+                <div className="bg-gray-800 rounded-lg divide-y divide-gray-700">
+                  {[
+                    { blocker: 'Duke ★', blocks: '外国援助', who: '誰でも', color: 'text-purple-400' },
+                    { blocker: 'Contessa ♛', blocks: '暗殺', who: '対象プレイヤーのみ', color: 'text-red-400' },
+                    { blocker: 'Ambassador ◆', blocks: '窃盗', who: '対象プレイヤーのみ', color: 'text-amber-400' },
+                    { blocker: 'Captain ⚓', blocks: '窃盗', who: '対象プレイヤーのみ', color: 'text-blue-400' },
+                  ].map(b => (
+                    <div key={b.blocker + b.blocks} className="px-3 py-2 flex items-center gap-2">
+                      <span className={`font-semibold min-w-[130px] ${b.color}`}>{b.blocker}</span>
+                      <span className="text-gray-400 text-xs">が</span>
+                      <span className="text-gray-200 font-semibold">{b.blocks}</span>
+                      <span className="text-gray-500 text-xs ml-auto">{b.who}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* Challenge rules */}
+              <section>
+                <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">チャレンジのルール</h3>
+                <div className="bg-gray-800 rounded-lg p-3 space-y-2 text-gray-300">
+                  <div className="flex gap-2"><span className="text-green-400 shrink-0">✓ 成功</span><span>チャレンジされた側がカードを見せた場合 → チャレンジした側が影響力を1つ失う。見せたカードはデッキに戻し新しいカードを引く</span></div>
+                  <div className="flex gap-2"><span className="text-red-400 shrink-0">✗ 失敗</span><span>カードを持っていなかった場合 → チャレンジされた側が影響力を1つ失い、アクション失敗（有料アクションはコイン返還）</span></div>
+                  <div className="flex gap-2 pt-1 border-t border-gray-700"><span className="text-yellow-400 shrink-0">⚠ 注意</span><span>暗殺にチャレンジして負けた場合、チャレンジ失敗の1つ＋暗殺の1つで計2影響力を失う可能性あり</span></div>
+                </div>
+              </section>
+
+              {/* Influence */}
+              <section>
+                <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">影響力・勝利条件</h3>
+                <div className="bg-gray-800 rounded-lg p-3 text-gray-300 space-y-1">
+                  <p>各プレイヤーは2枚の伏せカード（影響力）を持つ</p>
+                  <p>影響力を失うたびにカードを1枚公開する</p>
+                  <p>2枚とも公開されたプレイヤーは脱落</p>
+                  <p className="text-amber-300 font-semibold">最後に残った1人が勝利</p>
+                </div>
+              </section>
+
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-black/40 p-3 flex items-center justify-between">
         <h1 className="text-amber-400 font-bold text-lg">COUP</h1>
-        <span className="text-gray-400 text-sm">Room: {roomId}</span>
+        <button
+          onClick={() => setShowSummary(true)}
+          className="text-gray-300 hover:text-amber-400 text-xs border border-gray-600 hover:border-amber-500 px-2 py-1 rounded transition-colors"
+        >
+          📋 ルール
+        </button>
         <span className="text-gray-300 text-sm">{coin(me?.coins ?? 0)} {me?.name}</span>
       </div>
 
