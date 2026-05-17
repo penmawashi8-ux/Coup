@@ -31,6 +31,15 @@ type ActionBody = (
   | { type: 'start_game'; playerId: string }
 ) & { clientState?: GameState };
 
+function humanHasPendingReaction(reactions: Record<string, unknown>, players: GameState['players']): boolean {
+  return Object.entries(reactions)
+    .filter(([, r]) => r === null)
+    .some(([id]) => {
+      const p = players.find(pl => pl.id === id);
+      return p && !p.isCPU;
+    });
+}
+
 function processCPUTurns(state: GameState): GameState {
   let s = state;
   let safetyCounter = 0;
@@ -48,6 +57,8 @@ function processCPUTurns(state: GameState): GameState {
 
     if (s.phase === 'waiting_reactions') {
       const pa = s.pendingAction!;
+      // Always wait for the human player to react first
+      if (humanHasPendingReaction(pa.reactions, s.players)) break;
       const pendingCPU = Object.entries(pa.reactions)
         .filter(([, r]) => r === null)
         .map(([id]) => getPlayer(s, id))
@@ -63,6 +74,8 @@ function processCPUTurns(state: GameState): GameState {
 
     if (s.phase === 'waiting_block_reactions') {
       const pa = s.pendingAction!;
+      // Always wait for the human player to react first
+      if (humanHasPendingReaction(pa.blockReactions, s.players)) break;
       const pendingCPU = Object.entries(pa.blockReactions)
         .filter(([, r]) => r === null)
         .map(([id]) => getPlayer(s, id))

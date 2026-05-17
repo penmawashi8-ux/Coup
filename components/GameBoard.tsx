@@ -576,32 +576,41 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
             {/* Reaction panel */}
             {isWaitingMyReaction && pa && (
               <div className="space-y-2">
-                <p className="text-yellow-300 text-sm font-semibold">
-                  {state.players.find(p => p.id === pa.actorId)?.name} が{' '}
-                  {ACTION_LABELS[pa.type]} を宣言
-                  {pa.targetId === playerId && <span className="text-red-400"> (あなたが対象!)</span>}
-                </p>
+                <div className="bg-yellow-900/40 border border-yellow-600 rounded-lg p-3">
+                  <p className="text-yellow-200 text-sm font-bold">
+                    ⚡ {state.players.find(p => p.id === pa.actorId)?.name} が宣言：
+                  </p>
+                  <p className="text-white text-base font-semibold mt-0.5">
+                    {ACTION_LABELS[pa.type]}
+                    {pa.targetId === playerId && <span className="text-red-300 ml-1">（あなたが対象！）</span>}
+                    {pa.targetId && pa.targetId !== playerId && (
+                      <span className="text-gray-300 ml-1 text-sm">
+                        → {state.players.find(p => p.id === pa.targetId)?.name}
+                      </span>
+                    )}
+                  </p>
+                </div>
                 <button
                   onClick={() => handleReact('allow')}
-                  className="w-full bg-green-700 hover:bg-green-600 text-white py-2 rounded text-sm"
+                  className="w-full bg-green-700 hover:bg-green-600 text-white py-3 rounded-lg text-sm font-semibold"
                 >
                   許可する
                 </button>
                 {pa.claimedCharacter && (
                   <button
                     onClick={() => handleReact('challenge')}
-                    className="w-full bg-red-700 hover:bg-red-600 text-white py-2 rounded text-sm"
+                    className="w-full bg-red-700 hover:bg-red-600 text-white py-3 rounded-lg text-sm font-semibold"
                   >
-                    チャレンジ ({pa.claimedCharacter}を持っていない?)
+                    チャレンジ（{pa.claimedCharacter}を持っていない？）
                   </button>
                 )}
                 {canBlockAction && blockOptions.map(char => (
                   <button
                     key={char}
                     onClick={() => handleReact('block', char)}
-                    className="w-full bg-blue-700 hover:bg-blue-600 text-white py-2 rounded text-sm"
+                    className="w-full bg-blue-700 hover:bg-blue-600 text-white py-3 rounded-lg text-sm font-semibold"
                   >
-                    {CHAR_LABELS[char]}でブロック
+                    {char}でブロック
                   </button>
                 ))}
               </div>
