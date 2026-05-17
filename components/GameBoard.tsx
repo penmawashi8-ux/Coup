@@ -299,14 +299,21 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
           onClick={() => setShowSummary(false)}
         >
           <div
-            className="bg-gray-900 border border-gray-700 rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg max-h-[90vh] overflow-y-auto"
+            className="bg-gray-900 border border-gray-700 rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg max-h-[90vh] flex flex-col"
             onClick={e => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-gray-900 border-b border-gray-700 px-4 py-3 flex items-center justify-between">
+            {/* Header — outside scroll area so always visible */}
+            <div className="shrink-0 border-b border-gray-700 px-4 py-3 flex items-center justify-between">
               <h2 className="text-amber-400 font-bold text-lg">ルール早見表</h2>
-              <button onClick={() => setShowSummary(false)} className="text-gray-400 hover:text-white text-2xl leading-none">×</button>
+              <button
+                onClick={() => setShowSummary(false)}
+                className="text-gray-400 hover:text-white text-3xl leading-none w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-700"
+              >
+                ×
+              </button>
             </div>
-            <div className="p-4 space-y-5 text-sm">
+            {/* Scrollable content */}
+            <div className="overflow-y-auto flex-1 p-4 space-y-5 text-sm">
 
               {/* General Actions */}
               <section>
