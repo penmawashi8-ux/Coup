@@ -13,7 +13,7 @@ export default async function GamePage({ params, searchParams }: Props) {
 
   if (!pid) redirect('/');
 
-  const state = getRoom(roomId);
+  const state = await getRoom(roomId);
   if (!state) redirect('/');
 
   return (

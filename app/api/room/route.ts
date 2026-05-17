@@ -17,7 +17,6 @@ export async function POST(req: Request) {
   const players: Array<{ id: string; name: string; isCPU: boolean }> = [
     { id: hostId, name: playerName, isCPU: false },
   ];
-
   for (let i = 0; i < cpuCount; i++) {
     players.push({ id: uuidv4(), name: `CPU ${i + 1}`, isCPU: true });
   }
@@ -29,6 +28,6 @@ export async function POST(req: Request) {
     state.log = ['ルームを作成しました。友達の参加を待っています...'];
   }
 
-  setRoom(roomId, state);
+  await setRoom(roomId, state);
   return NextResponse.json({ roomId, playerId: hostId });
 }

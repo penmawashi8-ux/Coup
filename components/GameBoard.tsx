@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { GameState, ActionType, Character } from '@/lib/types';
 import CardDisplay from './CardDisplay';
+import { sounds } from '@/lib/sounds';
 
 interface Props {
   roomId: string;
@@ -81,7 +82,21 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
     }
   }, [state.log]);
 
+  const prevPhaseRef = useRef<string>('');
+  useEffect(() => {
+    const prev = prevPhaseRef.current;
+    const cur = state.phase;
+    if (prev === cur) return;
+    prevPhaseRef.current = cur;
+    if (cur === 'game_over') sounds.win();
+    else if (cur === 'lose_influence') sounds.loseInfluence();
+    else if (cur === 'resolving_challenge' || cur === 'resolving_block_challenge') sounds.challenge();
+    else if (cur === 'waiting_block_reactions') sounds.block();
+    else if (cur === 'action_select' && prev === 'lose_influence') sounds.coup();
+  }, [state.phase]);
+
   async function sendAction(body: Record<string, unknown>) {
+    sounds.buttonClick();
     setError('');
     try {
       const res = await fetch(`/api/room/${roomId}/action`, {
@@ -91,10 +106,20 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
       });
       if (!res.ok) {
         const err = await res.json();
-        setError(err.error ?? 'Error');
+        setError(err.error ?? 'エラーが発生しました');
         return;
       }
       const data: GameState = await res.json();
+      // Play sound based on action type
+      const b = body as Record<string, string>;
+      if (b.type === 'declare_action') {
+        if (b.action === 'coup') sounds.coup();
+        else if (b.action === 'income' || b.action === 'tax' || b.action === 'foreign_aid') sounds.coins();
+        else sounds.action();
+      } else if (b.type === 'react') {
+        if (b.reaction === 'challenge') sounds.challenge();
+        else if (b.reaction === 'block') sounds.block();
+      }
       setState(data);
       setSelectedAction(null);
       setSelectedTarget(null);
@@ -224,6 +249,7 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
                 </div>
               ))}
             </div>
+            {error && <p className="text-red-400 text-sm bg-red-900/30 rounded p-2">{error}</p>}
             {isHost && (
               <button
                 onClick={() => sendAction({ type: 'start_game', playerId })}

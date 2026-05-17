@@ -51,9 +51,7 @@ function processCPUTurns(state: GameState): GameState {
         .filter(([, r]) => r === null)
         .map(([id]) => getPlayer(s, id))
         .filter(p => p?.isCPU);
-
       if (pendingCPU.length === 0) break;
-
       for (const cpu of pendingCPU) {
         if (!cpu) continue;
         const { reaction, blockCharacter } = cpuChooseReaction(s, cpu.id);
@@ -68,9 +66,7 @@ function processCPUTurns(state: GameState): GameState {
         .filter(([, r]) => r === null)
         .map(([id]) => getPlayer(s, id))
         .filter(p => p?.isCPU);
-
       if (pendingCPU.length === 0) break;
-
       for (const cpu of pendingCPU) {
         if (!cpu) continue;
         const reaction = cpuChooseBlockReaction(s, cpu.id);
@@ -136,7 +132,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
   const body = await req.json() as ActionBody;
 
-  let state = getRoom(id);
+  let state = await getRoom(id);
   if (!state) return NextResponse.json({ error: 'Room not found' }, { status: 404 });
 
   try {
@@ -203,6 +199,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: 'Game error' }, { status: 500 });
   }
 
-  setRoom(id, state);
+  await setRoom(id, state);
   return NextResponse.json(state);
 }

@@ -31,7 +31,7 @@ function HomeInner() {
       const res = await fetch('/api/room', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerName: name, cpuCount, totalPlayers: cpuCount + 1 }),
+        body: JSON.stringify({ playerName: name, cpuCount, mode: 'cpu' }),
       });
       const data = await res.json();
       router.push(`/game/${data.roomId}?pid=${data.playerId}`);
