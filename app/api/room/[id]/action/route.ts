@@ -147,8 +147,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
   const body = await req.json() as ActionBody;
 
-  let state = await getRoom(id);
-  // CPU games pass clientState so the server works across cold serverless instances
+  // For CPU-only games (single human), always trust clientState as it's guaranteed
+  // to be the latest state returned by the previous action response.
+  // getRoom may return stale state from another serverless instance, which causes
+  // pa.challengerId to be from an old state and the wrong player to lose a card.
+  const isCPUGame = !!(body.clientState && body.clientState.players.filter(p => !p.isCPU).length === 1);
+  let state = (isCPUGame && body.clientState) ? body.clientState : await getRoom(id);
   if (!state && body.clientState) state = body.clientState;
   if (!state) return NextResponse.json({ error: 'Room not found' }, { status: 404 });
 
