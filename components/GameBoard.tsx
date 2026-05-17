@@ -51,6 +51,7 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
   const [selectedCards, setSelectedCards] = useState<string[]>([]);
   const [error, setError] = useState('');
   const [ticker, setTicker] = useState<string>('');
+  const [showSummary, setShowSummary] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const prevLogLenRef = useRef(initialState.log.length);
@@ -120,8 +121,8 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
     sounds.buttonClick();
     setError('');
     try {
-      // For CPU games, pass current state so the server works across cold serverless instances
-      const payload = isOnline ? body : { ...body, clientState: state };
+      // Always pass clientState as fallback for cold-start serverless instances
+      const payload = { ...body, clientState: state };
       const res = await fetch(`/api/room/${roomId}/action`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -310,8 +311,6 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
       </div>
     );
   }
-
-  const [showSummary, setShowSummary] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
