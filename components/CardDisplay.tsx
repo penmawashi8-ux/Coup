@@ -2,11 +2,11 @@
 import type { Character } from '@/lib/types';
 
 const charConfig: Record<Character, { color: string; symbol: string; desc: string }> = {
-  奉行: { color: 'from-purple-700 to-purple-900', symbol: '★', desc: '徴収 / 外国援助ブロック' },
-  忍者: { color: 'from-gray-800 to-black', symbol: '☠', desc: '暗殺' },
-  盗賊: { color: 'from-blue-600 to-blue-900', symbol: '⚓', desc: '強奪 / 強奪ブロック' },
-  密偵: { color: 'from-amber-500 to-amber-700', symbol: '◆', desc: '探索 / 強奪ブロック' },
-  姫: { color: 'from-red-600 to-red-900', symbol: '♛', desc: '暗殺ブロック' },
+  将軍: { color: 'from-purple-700 to-purple-900', symbol: '★', desc: '徴収 / 外国援助ブロック' },
+  刺客: { color: 'from-gray-800 to-black', symbol: '☠', desc: '暗殺' },
+  海賊: { color: 'from-blue-600 to-blue-900', symbol: '⚓', desc: '強奪 / 強奪ブロック' },
+  忍者: { color: 'from-amber-500 to-amber-700', symbol: '✦', desc: '探索 / 強奪ブロック' },
+  女王: { color: 'from-red-600 to-red-900', symbol: '♛', desc: '暗殺ブロック' },
 };
 
 interface Props {

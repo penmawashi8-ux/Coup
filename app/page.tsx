@@ -90,7 +90,7 @@ function HomeInner() {
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-6xl font-black tracking-widest text-amber-400 mb-2">COUP</h1>
+          <h1 className="text-6xl font-black tracking-widest text-amber-400 mb-2">謀略</h1>
           <p className="text-gray-400 text-sm">ブラフとチャレンジの心理戦</p>
         </div>
 
@@ -116,7 +116,7 @@ function HomeInner() {
             </button>
             <div className="mt-4 p-4 bg-gray-800 rounded-lg text-sm text-gray-400">
               <h3 className="text-gray-300 font-semibold mb-1">ゲームについて</h3>
-              <p>Coupは2〜6人のブラフゲームです。キャラクターカードを使い、相手の影響力をすべて除去した最後の1人が勝者。嘘をついても、チャレンジされなければ成功します。</p>
+              <p>謀略は2〜6人のブラフゲームです。キャラクターカードを使い、相手の影響力をすべて除去した最後の1人が勝者。嘘をついても、チャレンジされなければ成功します。</p>
             </div>
           </div>
         )}

@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "COUP - ブラフゲーム",
-  description: "Coupボードゲームのオンライン版。CPUとオンライン対戦が可能。",
+  title: "謀略 - ブラフゲーム",
+  description: "謀略ボードゲームのオンライン版。CPUとオンライン対戦が可能。",
 };
 
 export default function RootLayout({

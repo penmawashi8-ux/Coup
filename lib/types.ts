@@ -1,4 +1,4 @@
-export type Character = '奉行' | '忍者' | '盗賊' | '密偵' | '姫';
+export type Character = '将軍' | '刺客' | '海賊' | '忍者' | '女王';
 
 export type ActionType =
   | 'income'
