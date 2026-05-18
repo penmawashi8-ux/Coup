@@ -121,8 +121,8 @@ export function cpuChooseReaction(
     const inOurHand = cpu.hand.filter(c => c.character === pa.claimedCharacter).length;
     const accounted = visibleCount + inOurHand;
 
-    if (accounted >= 3) {
-      // All 3 copies accounted for — certain bluff
+    if (accounted >= 3 && rand(4) !== 0) {
+      // All 3 copies accounted for — certain bluff, challenge 75%
       return { reaction: 'challenge' };
     }
     if (accounted >= 2 && rand(4) === 0) {
@@ -151,7 +151,7 @@ export function cpuChooseBlockReaction(
     const inOurHand = cpu.hand.filter(c => c.character === blockerChar).length;
     const accounted = visibleCount + inOurHand;
 
-    if (accounted >= 3) return 'challenge';
+    if (accounted >= 3 && rand(4) !== 0) return 'challenge';
     if (accounted >= 2 && rand(4) === 0) return 'challenge';
   }
   return 'allow';
