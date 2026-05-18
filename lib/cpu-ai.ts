@@ -122,14 +122,14 @@ export function cpuChooseReaction(
     const accounted = visibleCount + inOurHand;
 
     if (accounted >= 3 && rand(4) !== 0) {
-      // All 3 copies accounted for — certain bluff, challenge 75%
-      return { reaction: 'challenge' };
+      return { reaction: 'challenge' }; // 確実なブラフ → 75%
     }
     if (accounted >= 2 && rand(4) === 0) {
-      // 2 of 3 copies accounted for — likely bluff, challenge 25%
-      return { reaction: 'challenge' };
+      return { reaction: 'challenge' }; // ほぼブラフ → 25%
     }
-    // Otherwise assume actor might legitimately have it
+    if (rand(10) === 0) {
+      return { reaction: 'challenge' }; // ブラフチャレンジ → 10%（情報漏れ防止）
+    }
   }
 
   return { reaction: 'allow' };
@@ -153,6 +153,7 @@ export function cpuChooseBlockReaction(
 
     if (accounted >= 3 && rand(4) !== 0) return 'challenge';
     if (accounted >= 2 && rand(4) === 0) return 'challenge';
+    if (rand(10) === 0) return 'challenge';
   }
   return 'allow';
 }
