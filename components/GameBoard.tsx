@@ -85,10 +85,12 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
       const kind: 'success' | 'fail' | 'elim' | 'neutral' =
         next.startsWith('✅') ? 'success'
         : next.startsWith('❌') ? 'fail'
-        : /脱落|クーデター|暗殺/.test(next) ? 'elim'
+        : /脱落|クーデター|暗殺|🏆|勝利/.test(next) ? 'elim'
         : 'neutral';
       setEventOverlay({ text: next, kind });
-      tickerTimerRef.current = setTimeout(drainTickerQueue, 2800);
+      // Victory gets a longer display; coup/assassination/elimination stay 2.8 s
+      const delay = /🏆|勝利/.test(next) ? 4000 : 2800;
+      tickerTimerRef.current = setTimeout(drainTickerQueue, delay);
     } else {
       setEventOverlay(null);
       setTicker(next);
@@ -256,12 +258,8 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
   const isLoseInfluencePlayer = state.phase === 'lose_influence' && pa?.currentLoseInfluenceEntry?.playerId === playerId;
   const isExchangePlayer = state.phase === 'exchange_select' && pa?.actorId === playerId;
 
-  // While the ticker / overlay is replaying CPU actions, freeze the action panel
-  // so it doesn't jump ahead to the next turn before the player sees what happened.
-  // Exception: if the human must act RIGHT NOW (lose influence, reveal card, exchange)
-  // always show those panels immediately.
-  const humanMustActNow = isLoseInfluencePlayer || isChallengedPlayer || isExchangePlayer ||
-    isWaitingMyReaction || isWaitingMyBlockReaction || (isMyTurn && state.phase === 'action_select');
+  // While the ticker / overlay is replaying events, always freeze the action panel
+  // so the board and narrative stay in sync before the human is asked to act.
   const tickerActive = !!ticker || !!eventOverlay;
 
   // Block options for my reaction
@@ -630,12 +628,13 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
 
             {error && <div className="text-red-400 text-sm mb-2">{error}</div>}
 
-            {/* While ticker is replaying events, hide the next-state panel unless
-                the human needs to act immediately (lose influence / reveal card). */}
-            {tickerActive && !humanMustActNow ? (
+            {/* Freeze the action panel while ticker is playing so the board
+                and the narrative are always in sync. Once the ticker finishes
+                the panel updates to whatever the current phase requires. */}
+            {tickerActive ? (
               <p className="text-gray-500 text-sm text-center py-2">⟳ 確認中...</p>
             ) : (<></> /* render action panel normally below */)}
-            {(!tickerActive || humanMustActNow) && (<>
+            {!tickerActive && (<>
 
             {/* My turn: select action */}
             {isMyTurn && state.phase === 'action_select' && (
