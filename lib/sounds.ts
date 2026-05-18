@@ -1,15 +1,28 @@
 'use client';
 
-// Web Audio API で効果音を生成（外部ファイル不要）
-function ctx(): AudioContext | null {
+// Singleton AudioContext — creating a new one per beep causes issues when
+// the browser suspends audio after the user leaves the tab.
+let _ac: AudioContext | null = null;
+
+function getCtx(): AudioContext | null {
   if (typeof window === 'undefined') return null;
   try {
-    return new (window.AudioContext || (window as never as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    if (!_ac) {
+      _ac = new (
+        window.AudioContext ||
+        (window as never as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+      )();
+    }
+    // Browsers suspend the context when the tab is hidden. Resume it before use.
+    if (_ac.state === 'suspended') {
+      _ac.resume().catch(() => {});
+    }
+    return _ac;
   } catch { return null; }
 }
 
 function beep(freq: number, duration: number, type: OscillatorType = 'sine', vol = 0.3) {
-  const ac = ctx();
+  const ac = getCtx();
   if (!ac) return;
   const osc = ac.createOscillator();
   const gain = ac.createGain();
