@@ -39,7 +39,7 @@ export default function CardDisplay({ character, faceDown, small, selected, onCl
       onClick={onClick}
       className={`
         ${h} rounded-lg bg-gradient-to-br ${cfg.color}
-        border-2 ${selected ? 'border-yellow-400 scale-105' : dead ? 'border-red-500 opacity-50' : 'border-white/20'}
+        border-2 ${selected ? 'border-yellow-400 scale-105' : dead ? 'border-gray-600 opacity-50 grayscale' : 'border-white/20'}
         flex flex-col items-center justify-center gap-1 cursor-${onClick ? 'pointer' : 'default'}
         select-none transition-all duration-150
         ${onClick && !dead ? 'hover:scale-105 hover:border-yellow-300' : ''}

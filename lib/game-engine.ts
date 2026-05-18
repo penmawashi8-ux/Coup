@@ -617,3 +617,52 @@ export function getAvailableActions(state: GameState, playerId: string): ActionT
   if (player.coins >= 7) actions.push('coup');
   return actions;
 }
+
+// Auto-handle whatever `targetId` is required to do right now (used for disconnected players).
+export function autoHandlePlayer(state: GameState, targetId: string): GameState {
+  const pa = state.pendingAction;
+  const target = getPlayer(state, targetId);
+  if (!target) return state;
+
+  if (state.phase === 'action_select' && getCurrentPlayer(state).id === targetId) {
+    const s = deepClone(state);
+    addLog(s, `${target.name} が応答しないためスキップ`);
+    return declareAction(s, targetId, 'income');
+  }
+
+  if (state.phase === 'waiting_reactions' && pa &&
+      targetId in pa.reactions && pa.reactions[targetId] === null) {
+    return submitReaction(state, targetId, 'allow');
+  }
+
+  if (state.phase === 'waiting_block_reactions' && pa &&
+      targetId in pa.blockReactions && pa.blockReactions[targetId] === null) {
+    return submitBlockReaction(state, targetId, 'allow');
+  }
+
+  if (state.phase === 'resolving_challenge' && pa && pa.actorId === targetId) {
+    const requiredChar = pa.claimedCharacter!;
+    const matchCard = target.hand.find(c => c.character === requiredChar);
+    const cardId = matchCard?.id ?? target.hand[0]?.id;
+    if (cardId) return resolveChallenge(state, cardId);
+  }
+
+  if (state.phase === 'resolving_block_challenge' && pa && pa.blockerId === targetId) {
+    const requiredChar = pa.blockerClaimedCharacter!;
+    const matchCard = target.hand.find(c => c.character === requiredChar);
+    const cardId = matchCard?.id ?? target.hand[0]?.id;
+    if (cardId) return resolveChallenge(state, cardId);
+  }
+
+  if (state.phase === 'lose_influence' && pa?.currentLoseInfluenceEntry?.playerId === targetId) {
+    const cardId = target.hand[0]?.id;
+    if (cardId) return chooseLoseInfluence(state, targetId, cardId);
+  }
+
+  if (state.phase === 'exchange_select' && pa?.actorId === targetId) {
+    const keptIds = target.hand.map(c => c.id);
+    return completeExchange(state, targetId, keptIds);
+  }
+
+  return state;
+}

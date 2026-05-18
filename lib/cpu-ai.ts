@@ -115,19 +115,23 @@ export function cpuChooseReaction(
 
   // Challenge if the action uses a character
   if (isCharacterAction(pa.type) && pa.claimedCharacter) {
-    // Check how many of that character are visible
     const visibleCards = state.players.flatMap(p => p.revealed);
     const visibleCount = visibleCards.filter(c => c.character === pa.claimedCharacter).length;
     const inOurHand = cpu.hand.filter(c => c.character === pa.claimedCharacter).length;
-    const totalInGame = 3;
-    const remaining = totalInGame - visibleCount - inOurHand;
+    const remaining = 3 - visibleCount - inOurHand;
 
-    // Probability actor has the card
-    const deckSize = state.deck.length + state.players.reduce((sum, p) => sum + p.hand.length, 0) - cpu.hand.length;
-    const probHasCard = remaining / Math.max(deckSize, 1);
+    // Pool of unknown cards (everything except our hand)
+    const poolSize = state.deck.length + state.players
+      .filter(p => p.id !== cpu.id)
+      .reduce((sum, p) => sum + p.hand.length, 0);
+    // P(actor has at least 1 of remaining N chars in pool of S with handSize cards)
+    const actor = getPlayer(state, pa.actorId)!;
+    const probHasCard = remaining <= 0
+      ? 0
+      : 1 - Math.pow(Math.max(0, 1 - remaining / Math.max(poolSize, 1)), actor.hand.length);
 
-    // Challenge if probability is low enough
-    if (probHasCard < 0.35 && rand(2) === 0) {
+    // Challenge only when clearly likely bluffing, and with some randomness
+    if (probHasCard < 0.4 && rand(3) === 0) {
       return { reaction: 'challenge' };
     }
   }
@@ -150,11 +154,17 @@ export function cpuChooseBlockReaction(
   const visibleCount = visibleCards.filter(c => c.character === blockerChar).length;
   const inOurHand = cpu.hand.filter(c => c.character === blockerChar).length;
   const remaining = 3 - visibleCount - inOurHand;
-  const deckSize = state.deck.length + state.players.reduce((sum, p) => sum + p.hand.length, 0) - cpu.hand.length;
-  const probHasCard = remaining / Math.max(deckSize, 1);
+  const poolSize = state.deck.length + state.players
+    .filter(p => p.id !== cpuId)
+    .reduce((sum, p) => sum + p.hand.length, 0);
+  const blocker = pa.blockerId ? getPlayer(state, pa.blockerId) : null;
+  const blockerHandSize = blocker?.hand.length ?? 1;
+  const probHasCard = remaining <= 0
+    ? 0
+    : 1 - Math.pow(Math.max(0, 1 - remaining / Math.max(poolSize, 1)), blockerHandSize);
 
-  // Challenge if actor and we think bluff
-  if (cpuId === pa.actorId && probHasCard < 0.4 && rand(2) === 0) {
+  // Challenge if we think blocker is bluffing
+  if (cpuId === pa.actorId && probHasCard < 0.35 && rand(3) === 0) {
     return 'challenge';
   }
   return 'allow';

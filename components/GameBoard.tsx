@@ -110,7 +110,9 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
       const res = await fetch(`/api/room/${roomId}`);
       if (res.ok) {
         const data: GameState = await res.json();
-        setState(data);
+        // Only accept state that is at least as fresh as what we have locally
+        // to prevent stale serverless responses from rewinding the game.
+        setState(prev => (data.lastUpdated >= prev.lastUpdated ? data : prev));
       }
     } catch { /* silent */ }
   }, [roomId, isOnline]);
@@ -242,6 +244,46 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
 
   const alive = state.players.filter(p => p.isAlive);
   void alive; // used in other contexts indirectly
+
+  // Detect which non-me human the game is currently waiting for (for skip logic)
+  const waitingForId = (() => {
+    if (!pa) {
+      if (state.phase === 'action_select' && !isMyTurn) {
+        const cur = state.players[state.currentPlayerIndex];
+        if (cur && !cur.isCPU) return cur.id;
+      }
+      return null;
+    }
+    if (state.phase === 'waiting_reactions') {
+      const e = Object.entries(pa.reactions).find(([id, r]) => r === null && id !== playerId && !state.players.find(p => p.id === id)?.isCPU);
+      return e?.[0] ?? null;
+    }
+    if (state.phase === 'waiting_block_reactions') {
+      const e = Object.entries(pa.blockReactions).find(([id, r]) => r === null && id !== playerId && !state.players.find(p => p.id === id)?.isCPU);
+      return e?.[0] ?? null;
+    }
+    if (state.phase === 'resolving_challenge' && pa.actorId !== playerId) {
+      const p = state.players.find(pl => pl.id === pa.actorId);
+      if (p && !p.isCPU) return pa.actorId;
+    }
+    if (state.phase === 'resolving_block_challenge' && pa.blockerId && pa.blockerId !== playerId) {
+      const p = state.players.find(pl => pl.id === pa.blockerId);
+      if (p && !p.isCPU) return pa.blockerId;
+    }
+    if (state.phase === 'lose_influence' && pa.currentLoseInfluenceEntry?.playerId !== playerId) {
+      const pid = pa.currentLoseInfluenceEntry?.playerId;
+      if (pid) { const p = state.players.find(pl => pl.id === pid); if (p && !p.isCPU) return pid; }
+    }
+    if (state.phase === 'exchange_select' && pa.actorId !== playerId) {
+      const p = state.players.find(pl => pl.id === pa.actorId);
+      if (p && !p.isCPU) return pa.actorId;
+    }
+    return null;
+  })();
+  const elapsedSec = Math.floor((Date.now() - state.lastUpdated) / 1000);
+  const canSkip = isOnline && !!waitingForId && (
+    (state.hostId === playerId && elapsedSec >= 30) || elapsedSec >= 90
+  );
 
   // Determine what UI to show
   const myReaction = pa ? pa.reactions[playerId] : undefined;
@@ -833,6 +875,22 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
             )}
             {state.phase === 'exchange_select' && !isExchangePlayer && (
               <p className="text-gray-400 text-sm">忍者 が探索を選んでいます...</p>
+            )}
+            {/* Disconnection skip button */}
+            {waitingForId && isOnline && (
+              <div className="mt-2 text-center">
+                <p className="text-gray-600 text-xs">
+                  {state.players.find(p => p.id === waitingForId)?.name} を待っています ({elapsedSec}秒)
+                </p>
+                {canSkip && (
+                  <button
+                    onClick={() => sendAction({ type: 'skip_player', playerId, targetPlayerId: waitingForId })}
+                    className="mt-1 text-xs text-red-400 hover:text-red-300 border border-red-800 hover:border-red-600 px-2 py-1 rounded transition-colors"
+                  >
+                    切断? スキップする
+                  </button>
+                )}
+              </div>
             )}
             </>)}
           </div>

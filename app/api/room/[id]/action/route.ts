@@ -11,6 +11,7 @@ import {
   getCurrentPlayer,
   getPlayer,
   createGame,
+  autoHandlePlayer,
 } from '@/lib/game-engine';
 import {
   cpuChooseAction,
@@ -29,6 +30,7 @@ type ActionBody = (
   | { type: 'lose_influence'; playerId: string; cardId: string }
   | { type: 'exchange'; playerId: string; keptCardIds: string[] }
   | { type: 'start_game'; playerId: string; cpuCount?: number }
+  | { type: 'skip_player'; playerId: string; targetPlayerId: string }
 ) & { clientState?: GameState };
 
 function humanHasPendingReaction(reactions: Record<string, unknown>, players: GameState['players']): boolean {
@@ -215,6 +217,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
       case 'exchange': {
         state = completeExchange(state, body.playerId, body.keptCardIds);
+        state = processCPUTurns(state);
+        break;
+      }
+
+      case 'skip_player': {
+        state = autoHandlePlayer(state, body.targetPlayerId);
         state = processCPUTurns(state);
         break;
       }

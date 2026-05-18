@@ -56,7 +56,7 @@ function HomeInner() {
     });
     setLoading(false);
     if (!ok) { setError(data.error ?? 'エラーが発生しました'); return; }
-    router.push(`/game/${data.roomId}?pid=${data.playerId}`);
+    router.push(`/r/${data.roomId}?pid=${data.playerId}`);
   }
 
   async function createOnlineRoom() {
@@ -68,7 +68,7 @@ function HomeInner() {
     });
     setLoading(false);
     if (!ok) { setError(data.error ?? 'エラーが発生しました'); return; }
-    router.push(`/game/${data.roomId}?pid=${data.playerId}&online=1`);
+    router.push(`/r/${data.roomId}?pid=${data.playerId}&online=1`);
   }
 
   async function joinOnlineRoom() {
@@ -81,7 +81,7 @@ function HomeInner() {
     });
     setLoading(false);
     if (!ok) { setError(data.error ?? 'エラーが発生しました'); return; }
-    router.push(`/game/${code}?pid=${data.playerId}&online=1`);
+    router.push(`/r/${code}?pid=${data.playerId}&online=1`);
   }
 
   const PLAYER_OPTIONS = [2, 3, 4, 5, 6];
