@@ -56,7 +56,7 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
   const [selectedCards, setSelectedCards] = useState<string[]>([]);
   const [error, setError] = useState('');
   const [ticker, setTicker] = useState<string>('');
-  const [eventOverlay, setEventOverlay] = useState<{ text: string; kind: 'success' | 'fail' | 'elim' | 'neutral' } | null>(null);
+  const [eventOverlay, setEventOverlay] = useState<{ text: string; kind: 'success' | 'fail' | 'elim' | 'victory' | 'neutral' } | null>(null);
   const [showSummary, setShowSummary] = useState(false);
   const [lobbyCpuCount, setLobbyCpuCount] = useState(0);
   const logRef = useRef<HTMLDivElement>(null);
@@ -82,10 +82,11 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
 
     if (isBigEvent) {
       setTicker('');
-      const kind: 'success' | 'fail' | 'elim' | 'neutral' =
+      const kind: 'success' | 'fail' | 'elim' | 'victory' | 'neutral' =
         next.startsWith('✅') ? 'success'
         : next.startsWith('❌') ? 'fail'
-        : /脱落|クーデター|暗殺|🏆|勝利/.test(next) ? 'elim'
+        : /🏆|勝利/.test(next) ? 'victory'
+        : /脱落|クーデター|暗殺/.test(next) ? 'elim'
         : 'neutral';
       setEventOverlay({ text: next, kind });
       // Victory gets a longer display; coup/assassination/elimination stay 2.8 s
@@ -365,7 +366,10 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
     );
   }
 
-  if (state.phase === 'game_over') {
+  // Delay the result screen until the ticker/overlay has finished showing
+  // the final events (elimination, victory). Once tickerActive becomes false
+  // after the last ticker entry drains, this re-renders and shows the screen.
+  if (state.phase === 'game_over' && !tickerActive) {
     const winner = state.players.find(p => p.id === state.winner);
     const iWon = state.winner === playerId;
     return (
@@ -533,6 +537,8 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
               ? 'bg-red-950 border-red-400 text-red-50'
               : eventOverlay.kind === 'elim'
               ? 'bg-gray-950 border-red-700 text-red-200'
+              : eventOverlay.kind === 'victory'
+              ? 'bg-yellow-950 border-yellow-400 text-yellow-50'
               : 'bg-gray-900 border-amber-500 text-amber-100'
           }`}>
             <p className="text-lg font-bold leading-snug">{eventOverlay.text}</p>
