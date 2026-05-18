@@ -256,6 +256,14 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
   const isLoseInfluencePlayer = state.phase === 'lose_influence' && pa?.currentLoseInfluenceEntry?.playerId === playerId;
   const isExchangePlayer = state.phase === 'exchange_select' && pa?.actorId === playerId;
 
+  // While the ticker / overlay is replaying CPU actions, freeze the action panel
+  // so it doesn't jump ahead to the next turn before the player sees what happened.
+  // Exception: if the human must act RIGHT NOW (lose influence, reveal card, exchange)
+  // always show those panels immediately.
+  const humanMustActNow = isLoseInfluencePlayer || isChallengedPlayer || isExchangePlayer ||
+    isWaitingMyReaction || isWaitingMyBlockReaction || (isMyTurn && state.phase === 'action_select');
+  const tickerActive = !!ticker || !!eventOverlay;
+
   // Block options for my reaction
   const getBlockOptions = () => {
     if (!pa) return [];
@@ -622,6 +630,13 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
 
             {error && <div className="text-red-400 text-sm mb-2">{error}</div>}
 
+            {/* While ticker is replaying events, hide the next-state panel unless
+                the human needs to act immediately (lose influence / reveal card). */}
+            {tickerActive && !humanMustActNow ? (
+              <p className="text-gray-500 text-sm text-center py-2">⟳ 確認中...</p>
+            ) : (<></> /* render action panel normally below */)}
+            {(!tickerActive || humanMustActNow) && (<>
+
             {/* My turn: select action */}
             {isMyTurn && state.phase === 'action_select' && (
               <div className="space-y-2">
@@ -814,6 +829,7 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
             {state.phase === 'exchange_select' && !isExchangePlayer && (
               <p className="text-gray-400 text-sm">密偵 が探索を選んでいます...</p>
             )}
+            </>)}
           </div>
 
           {/* Game Log */}
