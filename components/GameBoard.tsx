@@ -56,6 +56,7 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
   const [selectedCards, setSelectedCards] = useState<string[]>([]);
   const [error, setError] = useState('');
   const [ticker, setTicker] = useState<string>('');
+  const [eventOverlay, setEventOverlay] = useState<{ text: string; kind: 'success' | 'fail' | 'elim' | 'neutral' } | null>(null);
   const [showSummary, setShowSummary] = useState(false);
   const [lobbyCpuCount, setLobbyCpuCount] = useState(0);
   const logRef = useRef<HTMLDivElement>(null);
@@ -68,15 +69,31 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
     const next = tickerQueueRef.current.shift();
     if (!next) {
       setTicker('');
+      setEventOverlay(null);
       tickerTimerRef.current = null;
-      // Ticker finished — sync displayed player cards with latest state
       setDisplayedPlayers(latestPlayersRef.current);
       return;
     }
-    setTicker(next);
-    // Give more time for important events (challenges, eliminations, victories)
-    const isImportant = /チャレンジ|脱落|公開|ブロック|勝利/.test(next);
-    tickerTimerRef.current = setTimeout(drainTickerQueue, isImportant ? 2400 : 1600);
+
+    // Route important events to the center overlay; routine events to the small top ticker.
+    const isBigEvent =
+      next.startsWith('✅') || next.startsWith('❌') ||
+      /脱落|🏆|勝利|暗殺|クーデター/.test(next);
+
+    if (isBigEvent) {
+      setTicker('');
+      const kind: 'success' | 'fail' | 'elim' | 'neutral' =
+        next.startsWith('✅') ? 'success'
+        : next.startsWith('❌') ? 'fail'
+        : /脱落|クーデター|暗殺/.test(next) ? 'elim'
+        : 'neutral';
+      setEventOverlay({ text: next, kind });
+      tickerTimerRef.current = setTimeout(drainTickerQueue, 2800);
+    } else {
+      setEventOverlay(null);
+      setTicker(next);
+      tickerTimerRef.current = setTimeout(drainTickerQueue, 1600);
+    }
   }
 
   const me = state.players.find(p => p.id === playerId);
@@ -491,11 +508,28 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
         </div>
       )}
 
-      {/* Action ticker */}
+      {/* Routine action ticker — small banner at top */}
       {ticker && (
         <div className="fixed top-0 left-0 right-0 z-40 flex justify-center pointer-events-none">
-          <div className="mt-2 mx-4 bg-gray-800/95 border border-amber-500/60 text-amber-200 text-sm font-medium px-4 py-2 rounded-xl shadow-lg max-w-sm w-full text-center animate-pulse">
+          <div className="mt-2 mx-4 bg-gray-800/95 border border-amber-500/60 text-amber-200 text-sm font-medium px-4 py-2 rounded-xl shadow-lg max-w-sm w-full text-center">
             {ticker}
+          </div>
+        </div>
+      )}
+
+      {/* Important event overlay — large centered card */}
+      {eventOverlay && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none px-6">
+          <div className={`w-full max-w-sm rounded-2xl px-5 py-5 shadow-2xl text-center border-2 ${
+            eventOverlay.kind === 'success'
+              ? 'bg-emerald-950 border-emerald-400 text-emerald-50'
+              : eventOverlay.kind === 'fail'
+              ? 'bg-red-950 border-red-400 text-red-50'
+              : eventOverlay.kind === 'elim'
+              ? 'bg-gray-950 border-red-700 text-red-200'
+              : 'bg-gray-900 border-amber-500 text-amber-100'
+          }`}>
+            <p className="text-lg font-bold leading-snug">{eventOverlay.text}</p>
           </div>
         </div>
       )}
