@@ -113,27 +113,23 @@ export function cpuChooseReaction(
     }
   }
 
-  // Challenge if the action uses a character
+  // Challenge only when we have strong evidence of a bluff
+  // (i.e. we hold / have seen enough copies to know actor likely doesn't have it)
   if (isCharacterAction(pa.type) && pa.claimedCharacter) {
-    const visibleCards = state.players.flatMap(p => p.revealed);
-    const visibleCount = visibleCards.filter(c => c.character === pa.claimedCharacter).length;
+    const visibleCount = state.players.flatMap(p => p.revealed)
+      .filter(c => c.character === pa.claimedCharacter).length;
     const inOurHand = cpu.hand.filter(c => c.character === pa.claimedCharacter).length;
-    const remaining = 3 - visibleCount - inOurHand;
+    const accounted = visibleCount + inOurHand;
 
-    // Pool of unknown cards (everything except our hand)
-    const poolSize = state.deck.length + state.players
-      .filter(p => p.id !== cpu.id)
-      .reduce((sum, p) => sum + p.hand.length, 0);
-    // P(actor has at least 1 of remaining N chars in pool of S with handSize cards)
-    const actor = getPlayer(state, pa.actorId)!;
-    const probHasCard = remaining <= 0
-      ? 0
-      : 1 - Math.pow(Math.max(0, 1 - remaining / Math.max(poolSize, 1)), actor.hand.length);
-
-    // Challenge only when clearly likely bluffing, and with some randomness
-    if (probHasCard < 0.4 && rand(3) === 0) {
+    if (accounted >= 3 && rand(2) === 0) {
+      // All 3 copies accounted for — certain bluff, challenge 50%
       return { reaction: 'challenge' };
     }
+    if (accounted >= 2 && rand(4) === 0) {
+      // 2 of 3 copies accounted for — likely bluff, challenge 25%
+      return { reaction: 'challenge' };
+    }
+    // Otherwise assume actor might legitimately have it
   }
 
   return { reaction: 'allow' };
@@ -149,23 +145,14 @@ export function cpuChooseBlockReaction(
 
   if (!blockerChar) return 'allow';
 
-  // Check how many of that character are visible
-  const visibleCards = state.players.flatMap(p => p.revealed);
-  const visibleCount = visibleCards.filter(c => c.character === blockerChar).length;
-  const inOurHand = cpu.hand.filter(c => c.character === blockerChar).length;
-  const remaining = 3 - visibleCount - inOurHand;
-  const poolSize = state.deck.length + state.players
-    .filter(p => p.id !== cpuId)
-    .reduce((sum, p) => sum + p.hand.length, 0);
-  const blocker = pa.blockerId ? getPlayer(state, pa.blockerId) : null;
-  const blockerHandSize = blocker?.hand.length ?? 1;
-  const probHasCard = remaining <= 0
-    ? 0
-    : 1 - Math.pow(Math.max(0, 1 - remaining / Math.max(poolSize, 1)), blockerHandSize);
+  if (cpuId === pa.actorId) {
+    const visibleCount = state.players.flatMap(p => p.revealed)
+      .filter(c => c.character === blockerChar).length;
+    const inOurHand = cpu.hand.filter(c => c.character === blockerChar).length;
+    const accounted = visibleCount + inOurHand;
 
-  // Challenge if we think blocker is bluffing
-  if (cpuId === pa.actorId && probHasCard < 0.35 && rand(3) === 0) {
-    return 'challenge';
+    if (accounted >= 3 && rand(2) === 0) return 'challenge';
+    if (accounted >= 2 && rand(4) === 0) return 'challenge';
   }
   return 'allow';
 }
