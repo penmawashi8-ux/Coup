@@ -46,6 +46,11 @@ function coin(n: number) {
 
 export default function GameBoard({ roomId, playerId, initialState, isOnline }: Props) {
   const [state, setState] = useState<GameState>(initialState);
+  // displayedPlayers is what's shown on the board for CPU cards.
+  // It lags behind `state` while the ticker is playing so that card changes
+  // are revealed in sync with the log rather than jumping to the final result.
+  const [displayedPlayers, setDisplayedPlayers] = useState(initialState.players);
+  const latestPlayersRef = useRef(initialState.players);
   const [selectedAction, setSelectedAction] = useState<ActionType | null>(null);
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
   const [selectedCards, setSelectedCards] = useState<string[]>([]);
@@ -61,7 +66,13 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
 
   function drainTickerQueue() {
     const next = tickerQueueRef.current.shift();
-    if (!next) { setTicker(''); tickerTimerRef.current = null; return; }
+    if (!next) {
+      setTicker('');
+      tickerTimerRef.current = null;
+      // Ticker finished — sync displayed player cards with latest state
+      setDisplayedPlayers(latestPlayersRef.current);
+      return;
+    }
     setTicker(next);
     // Give more time for important events (challenges, eliminations, victories)
     const isImportant = /チャレンジ|脱落|公開|ブロック|勝利/.test(next);
@@ -97,13 +108,19 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
     }
   }, [state.log]);
 
-  // Queue new log entries for the ticker
+  // Queue new log entries for the ticker; keep displayed cards in sync
   useEffect(() => {
+    latestPlayersRef.current = state.players;
     const newEntries = state.log.slice(prevLogLenRef.current);
     prevLogLenRef.current = state.log.length;
-    if (newEntries.length === 0) return;
+    if (newEntries.length === 0) {
+      // No new log entries — update displayed cards immediately (e.g. lobby / init)
+      setDisplayedPlayers(state.players);
+      return;
+    }
     tickerQueueRef.current.push(...newEntries);
     if (!tickerTimerRef.current) drainTickerQueue();
+    // displayedPlayers will be updated when drainTickerQueue empties the queue
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.log]);
 
@@ -503,9 +520,15 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
         <div className="md:col-span-2 space-y-3">
           <h2 className="text-gray-400 text-sm uppercase tracking-wide">プレイヤー</h2>
           {state.players.map(player => {
-            const isCurrentTurn = state.players[state.currentPlayerIndex]?.id === player.id;
-            const isElim = !player.isAlive;
+            // For CPU players use the delayed displayedPlayers so card changes
+            // appear in sync with the ticker rather than jumping ahead.
+            // For the human player always show the latest state.
             const isMe = player.id === playerId;
+            const displayPlayer = isMe
+              ? player
+              : (displayedPlayers.find(p => p.id === player.id) ?? player);
+            const isCurrentTurn = state.players[state.currentPlayerIndex]?.id === player.id;
+            const isElim = !displayPlayer.isAlive;
             return (
               <div
                 key={player.id}
@@ -521,11 +544,11 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
                     {isCurrentTurn && !isElim && <span className="text-xs bg-amber-600 px-1 rounded">ターン中</span>}
                     {isElim && <span className="text-xs bg-red-800 px-1 rounded">脱落</span>}
                   </div>
-                  <span className="text-amber-300 font-mono">{coin(player.coins)}</span>
+                  <span className="text-amber-300 font-mono">{coin(displayPlayer.coins)}</span>
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   {/* Face-down cards (hidden for others) */}
-                  {player.hand.map((card, i) => (
+                  {displayPlayer.hand.map((card) => (
                     <div key={card.id}>
                       {isMe ? (
                         <CardDisplay character={card.character} small />
@@ -535,7 +558,7 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
                     </div>
                   ))}
                   {/* Revealed cards */}
-                  {player.revealed.map(card => (
+                  {displayPlayer.revealed.map(card => (
                     <CardDisplay key={card.id} character={card.character} small dead />
                   ))}
                   {/* Target button */}
