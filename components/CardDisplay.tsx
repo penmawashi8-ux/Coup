@@ -75,7 +75,7 @@ function IconQueen({ size }: IconProps) {
   );
 }
 
-const charIcons: Record<Character, (p: IconProps) => JSX.Element> = {
+const charIcons = {
   将軍: IconShogun,
   刺客: IconAssassin,
   海賊: IconPirate,
