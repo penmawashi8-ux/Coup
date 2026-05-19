@@ -602,10 +602,34 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
 
       {/* Skip button — appears after elimination while ticker is still playing */}
       {showElimSkip && (
-        <div className="fixed bottom-6 left-0 right-0 z-50 flex justify-center pointer-events-none">
+        <div className="fixed bottom-0 left-0 right-0 z-[60] flex justify-center pb-10 pt-3 bg-gradient-to-t from-black/60 to-transparent pointer-events-none">
           <button
-            className="pointer-events-auto bg-gray-900/95 border border-gray-600 hover:border-gray-400 text-gray-300 hover:text-white text-sm font-medium px-5 py-2.5 rounded-xl shadow-xl transition-colors"
-            onClick={() => { skipElimRef.current = true; setSkipRequested(true); }}
+            className="pointer-events-auto bg-gray-800 border border-gray-500 active:border-gray-300 text-gray-200 text-base font-semibold px-8 py-3 rounded-2xl shadow-2xl"
+            onClick={() => {
+              // Cancel the current event's timer immediately
+              if (tickerTimerRef.current) clearTimeout(tickerTimerRef.current);
+              // Find the victory event in the remaining queue (processCPUTurns
+              // already ran to game_over so it should be there)
+              const victoryEvent = tickerQueueRef.current.find(e => /🏆|勝利/.test(e));
+              tickerQueueRef.current = [];
+              setTicker('');
+              skipElimRef.current = true;
+              setSkipRequested(true);
+              if (victoryEvent) {
+                setEventOverlay({ text: victoryEvent, kind: 'victory' });
+                tickerTimerRef.current = setTimeout(() => {
+                  setEventOverlay(null);
+                  tickerTimerRef.current = null;
+                  skipElimRef.current = false;
+                  setDisplayedPlayers(latestPlayersRef.current);
+                }, 2000);
+              } else {
+                setEventOverlay(null);
+                tickerTimerRef.current = null;
+                skipElimRef.current = false;
+                setDisplayedPlayers(latestPlayersRef.current);
+              }
+            }}
           >
             残りをスキップ →
           </button>
