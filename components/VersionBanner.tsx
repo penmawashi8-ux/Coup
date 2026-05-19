@@ -29,7 +29,7 @@ export default function VersionBanner() {
   return (
     <div className="fixed bottom-4 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
       <div className="bg-gray-900 border border-amber-500 text-white rounded-xl px-4 py-3 shadow-xl flex items-center gap-3 pointer-events-auto max-w-sm w-full">
-        <span className="text-sm flex-1">🆕 新しいバージョンが利用できます</span>
+        <span className="text-sm flex-1">新しいバージョンが利用できます</span>
         <button
           onClick={() => window.location.reload()}
           className="bg-amber-500 hover:bg-amber-400 text-black text-sm font-bold px-3 py-1.5 rounded-lg shrink-0"

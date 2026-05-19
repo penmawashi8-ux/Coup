@@ -573,7 +573,7 @@ function advanceTurn(s: GameState): GameState {
     s.phase = 'game_over';
     if (s.winner) {
       const w = getPlayer(s, s.winner)!;
-      addLog(s, `🏆 ${w.name} の勝利！`);
+      addLog(s, `${w.name} の勝利！`);
     }
     return s;
   }
@@ -588,7 +588,7 @@ function advanceTurn(s: GameState): GameState {
   // Check 10+ coin rule
   const current = s.players[idx];
   if (current.coins >= 10) {
-    addLog(s, `⚠️ ${current.name} は${current.coins}コインのためクーデター必須！`);
+    addLog(s, `${current.name} は${current.coins}コインのためクーデター必須！`);
   }
 
   s.phase = 'action_select';

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import CoupHeroImage from '@/components/CoupHeroImage';
 
 const RANDOM_NAMES = [
   'スパイ', '詐欺師', '公爵', '暗殺者', '船長', '大使', '伯爵', '革命家',
@@ -90,7 +91,8 @@ function HomeInner() {
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-6xl font-black tracking-widest text-amber-400 mb-2">謀略</h1>
+          <CoupHeroImage />
+          <h1 className="text-5xl font-black tracking-widest text-amber-400 mt-4 mb-1">謀略</h1>
           <p className="text-gray-400 text-sm">ブラフとチャレンジの心理戦</p>
         </div>
 
@@ -100,19 +102,19 @@ function HomeInner() {
               onClick={() => { setMode('cpu'); setTotalPlayers(2); }}
               className="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-4 rounded-xl text-lg transition-colors"
             >
-              🤖 CPU対戦
+              CPU対戦
             </button>
             <button
               onClick={() => setMode('online_create')}
               className="w-full bg-blue-700 hover:bg-blue-600 text-white font-bold py-4 rounded-xl text-lg transition-colors"
             >
-              🌐 オンライン対戦（ルーム作成）
+              オンライン対戦（ルーム作成）
             </button>
             <button
               onClick={() => setMode('online_join')}
               className="w-full bg-green-700 hover:bg-green-600 text-white font-bold py-4 rounded-xl text-lg transition-colors"
             >
-              🔗 ルームに参加
+              ルームに参加
             </button>
             <div className="mt-4 p-4 bg-gray-800 rounded-lg text-sm text-gray-400">
               <h3 className="text-gray-300 font-semibold mb-1">ゲームについて</h3>

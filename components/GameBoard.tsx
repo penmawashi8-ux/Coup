@@ -82,7 +82,7 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
     // Route important events to the center overlay; routine events to the small top ticker.
     const isBigEvent =
       next.startsWith('✅') || next.startsWith('❌') ||
-      /脱落|🏆|勝利|暗殺|クーデター|影響力-1/.test(next);
+      /脱落|勝利|暗殺|クーデター|影響力-1/.test(next);
 
     // If player pressed "skip after elimination", fast-forward routine events.
     if (skipElimRef.current && !isBigEvent) {
@@ -95,12 +95,12 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
       const kind: 'success' | 'fail' | 'elim' | 'victory' | 'neutral' =
         next.startsWith('✅') ? 'success'
         : next.startsWith('❌') ? 'fail'
-        : /🏆|勝利/.test(next) ? 'victory'
+        : /勝利/.test(next) ? 'victory'
         : /脱落|クーデター|暗殺/.test(next) ? 'elim'
         : 'neutral';
       setEventOverlay({ text: next, kind });
       // 脱落は少し長めに表示して原因を読めるように
-      const delay = /🏆|勝利/.test(next) ? 4000 : /脱落/.test(next) ? 3500 : 2800;
+      const delay = /勝利/.test(next) ? 4000 : /脱落/.test(next) ? 3500 : 2800;
       tickerTimerRef.current = setTimeout(drainTickerQueue, delay);
     } else {
       setEventOverlay(null);
@@ -487,7 +487,7 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
                       </div>
                       <div className="flex-1 text-gray-300">{a.effect}</div>
                       <div className="text-right text-xs space-y-0.5 shrink-0">
-                        <div className={a.block === '×' ? 'text-gray-600' : 'text-blue-400'}>🛡 {a.block}</div>
+                        <div className={a.block === '×' ? 'text-gray-600' : 'text-blue-400'}>B: {a.block}</div>
                         <div className={a.challenge === '×' ? 'text-gray-600' : 'text-red-400'}>⚔ {a.challenge}</div>
                       </div>
                     </div>
@@ -513,7 +513,7 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
                         {a.cost && <span className="text-amber-400 text-xs">{a.cost}</span>}
                       </div>
                       <p className="text-gray-300 text-xs ml-7">{a.effect}</p>
-                      {a.block !== '—' && <p className="text-blue-300 text-xs ml-7 mt-0.5">🛡 ブロック: {a.block}</p>}
+                      {a.block !== '—' && <p className="text-blue-300 text-xs ml-7 mt-0.5">ブロック: {a.block}</p>}
                     </div>
                   ))}
                 </div>
@@ -646,7 +646,7 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
           onClick={() => setShowSummary(true)}
           className="text-gray-300 hover:text-amber-400 text-xs border border-gray-600 hover:border-amber-500 px-2 py-1 rounded transition-colors"
         >
-          📋 ルール
+          ルール
         </button>
         <span className="text-gray-300 text-sm">{coin(me?.coins ?? 0)} {me?.name}</span>
       </div>
