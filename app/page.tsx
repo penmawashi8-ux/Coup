@@ -185,7 +185,7 @@ function HomeInner() {
               textShadow: '0 0 32px rgba(217,119,6,0.7), 0 0 70px rgba(180,83,9,0.35)',
             }}
           >
-            謀・略
+            謀略
           </h1>
 
           {/* Subtitle */}
