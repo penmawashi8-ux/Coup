@@ -121,7 +121,10 @@ export function cpuChooseReaction(
     const inOurHand = cpu.hand.filter(c => c.character === pa.claimedCharacter).length;
     const accounted = visibleCount + inOurHand;
 
-    const isDesperate = cpu.hand.length <= 1; // 影響力1枚 = 負けそう
+    // 自分が標的かどうかでチャレンジ積極度を変える
+    const isTargeted = pa.targetId === cpuId;
+    // 残り1枚 かつ 自分が標的 → 捨て身で積極チャレンジ
+    const isDesperate = cpu.hand.length <= 1 && isTargeted;
 
     if (accounted >= 3 && rand(4) !== 0) {
       return { reaction: 'challenge' }; // 確実なブラフ → 75%
@@ -130,10 +133,14 @@ export function cpuChooseReaction(
       return { reaction: 'challenge' }; // ほぼブラフ → 25%
     }
     if (isDesperate && rand(3) === 0) {
-      return { reaction: 'challenge' }; // 負けそうな時は積極的に → 33%
+      return { reaction: 'challenge' }; // 捨て身 → 33%
     }
-    if (rand(10) === 0) {
-      return { reaction: 'challenge' }; // ブラフチャレンジ → 10%
+    // 自分に不利益のないアクション（他プレイヤーへの行動など）はほぼスルー
+    if (isTargeted && rand(10) === 0) {
+      return { reaction: 'challenge' }; // 標的時のブラフチャレンジ → 10%
+    }
+    if (!isTargeted && rand(20) === 0) {
+      return { reaction: 'challenge' }; // 非標的時のブラフチャレンジ → 5%
     }
   }
 

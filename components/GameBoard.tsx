@@ -78,7 +78,15 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
     // Route important events to the center overlay; routine events to the small top ticker.
     const isBigEvent =
       next.startsWith('✅') || next.startsWith('❌') ||
-      /脱落|🏆|勝利|暗殺|クーデター/.test(next);
+      /脱落|🏆|勝利|暗殺|クーデター|影響力-1/.test(next);
+
+    // After the local player is eliminated, fast-skip routine events so we quickly
+    // reach the key events (暗殺/脱落/🏆) without watching unrelated CPU actions.
+    const humanAlive = latestPlayersRef.current.find(p => p.id === playerId)?.isAlive ?? true;
+    if (!humanAlive && !isBigEvent) {
+      tickerTimerRef.current = setTimeout(drainTickerQueue, 200);
+      return;
+    }
 
     if (isBigEvent) {
       setTicker('');
@@ -89,8 +97,8 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
         : /脱落|クーデター|暗殺/.test(next) ? 'elim'
         : 'neutral';
       setEventOverlay({ text: next, kind });
-      // Victory gets a longer display; coup/assassination/elimination stay 2.8 s
-      const delay = /🏆|勝利/.test(next) ? 4000 : 2800;
+      // Victory longer; elimination/assassination longer to let player read cause of death
+      const delay = /🏆|勝利/.test(next) ? 4000 : /脱落/.test(next) ? 3500 : 2800;
       tickerTimerRef.current = setTimeout(drainTickerQueue, delay);
     } else {
       setEventOverlay(null);
