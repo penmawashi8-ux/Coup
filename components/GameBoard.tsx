@@ -40,13 +40,34 @@ const CHAR_LABELS: Record<Character, string> = {
   女王: '女王 (暗殺ブロック)',
 };
 
+function CoinIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      {/* Coin base */}
+      <circle cx="12" cy="12" r="11" fill="#d97706" />
+      <circle cx="12" cy="12" r="11" stroke="#92400e" strokeWidth="0.8" />
+      {/* Inner ring */}
+      <circle cx="12" cy="12" r="8.5" fill="none" stroke="#78350f" strokeWidth="0.6" opacity="0.6" />
+      {/* Star motif */}
+      <polygon
+        points="12,5.5 13.6,9.8 18.3,9.8 14.6,12.5 16.1,16.8 12,14.2 7.9,16.8 9.4,12.5 5.7,9.8 10.4,9.8"
+        fill="#78350f"
+        opacity="0.38"
+      />
+      {/* Light reflection */}
+      <ellipse cx="8.5" cy="7.5" rx="2.8" ry="1.6" fill="white" opacity="0.18" transform="rotate(-20 8.5 7.5)" />
+    </svg>
+  );
+}
+
 function CoinBadge({ n }: { n: number }) {
   return (
     <span
-      className="inline-flex items-center gap-1 px-2 py-0.5 rounded font-mono font-bold text-xs"
-      style={{ background: 'rgba(120,53,15,0.45)', border: '1px solid rgba(180,83,9,0.5)', color: '#fbbf24' }}
+      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded font-mono font-bold text-sm"
+      style={{ background: 'rgba(120,53,15,0.4)', border: '1px solid rgba(180,83,9,0.5)', color: '#fbbf24' }}
     >
-      ◆ {n}
+      <CoinIcon size={16} />
+      {n}
     </span>
   );
 }
