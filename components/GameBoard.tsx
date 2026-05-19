@@ -64,6 +64,8 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
   const prevLogLenRef = useRef(initialState.log.length);
   const tickerQueueRef = useRef<string[]>([]);
   const tickerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const skipElimRef = useRef(false); // set true when player presses skip after elimination
+  const [skipRequested, setSkipRequested] = useState(false);
 
   function drainTickerQueue() {
     const next = tickerQueueRef.current.shift();
@@ -71,6 +73,8 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
       setTicker('');
       setEventOverlay(null);
       tickerTimerRef.current = null;
+      skipElimRef.current = false;
+      setSkipRequested(false);
       setDisplayedPlayers(latestPlayersRef.current);
       return;
     }
@@ -80,11 +84,9 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
       next.startsWith('✅') || next.startsWith('❌') ||
       /脱落|🏆|勝利|暗殺|クーデター|影響力-1/.test(next);
 
-    // After the local player is eliminated, fast-skip routine events so we quickly
-    // reach the key events (暗殺/脱落/🏆) without watching unrelated CPU actions.
-    const humanAlive = latestPlayersRef.current.find(p => p.id === playerId)?.isAlive ?? true;
-    if (!humanAlive && !isBigEvent) {
-      tickerTimerRef.current = setTimeout(drainTickerQueue, 200);
+    // If player pressed "skip after elimination", fast-forward routine events.
+    if (skipElimRef.current && !isBigEvent) {
+      tickerTimerRef.current = setTimeout(drainTickerQueue, 150);
       return;
     }
 
@@ -97,7 +99,7 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
         : /脱落|クーデター|暗殺/.test(next) ? 'elim'
         : 'neutral';
       setEventOverlay({ text: next, kind });
-      // Victory longer; elimination/assassination longer to let player read cause of death
+      // 脱落は少し長めに表示して原因を読めるように
       const delay = /🏆|勝利/.test(next) ? 4000 : /脱落/.test(next) ? 3500 : 2800;
       tickerTimerRef.current = setTimeout(drainTickerQueue, delay);
     } else {
@@ -312,6 +314,8 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
   // While the ticker / overlay is replaying events, always freeze the action panel
   // so the board and narrative stay in sync before the human is asked to act.
   const tickerActive = !!ticker || !!eventOverlay;
+  // CPU戦で自分が脱落後、まだticker再生中であればスキップボタンを表示
+  const showElimSkip = !isOnline && me != null && !me.isAlive && tickerActive && !skipRequested;
 
   // Block options for my reaction
   const getBlockOptions = () => {
@@ -593,6 +597,18 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
           }`}>
             <p className="text-lg font-bold leading-snug">{eventOverlay.text}</p>
           </div>
+        </div>
+      )}
+
+      {/* Skip button — appears after elimination while ticker is still playing */}
+      {showElimSkip && (
+        <div className="fixed bottom-6 left-0 right-0 z-50 flex justify-center pointer-events-none">
+          <button
+            className="pointer-events-auto bg-gray-900/95 border border-gray-600 hover:border-gray-400 text-gray-300 hover:text-white text-sm font-medium px-5 py-2.5 rounded-xl shadow-xl transition-colors"
+            onClick={() => { skipElimRef.current = true; setSkipRequested(true); }}
+          >
+            残りをスキップ →
+          </button>
         </div>
       )}
 
