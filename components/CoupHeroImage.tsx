@@ -1,106 +1,145 @@
 export default function CoupHeroImage() {
+  const cx = 110;
+  const cy = 150;
+
+  const shortRays = Array.from({ length: 24 }, (_, i) => {
+    const a = (i * 15) * Math.PI / 180;
+    return { x1: cx + 38 * Math.cos(a), y1: cy + 38 * Math.sin(a), x2: cx + 60 * Math.cos(a), y2: cy + 60 * Math.sin(a) };
+  });
+
+  const longRays = Array.from({ length: 12 }, (_, i) => {
+    const a = (i * 30) * Math.PI / 180;
+    return { x1: cx + 38 * Math.cos(a), y1: cy + 38 * Math.sin(a), x2: cx + 76 * Math.cos(a), y2: cy + 76 * Math.sin(a) };
+  });
+
   return (
     <svg
-      viewBox="0 0 360 200"
+      viewBox="0 0 220 300"
       xmlns="http://www.w3.org/2000/svg"
-      className="w-full max-w-[280px] mx-auto block"
+      className="w-44 mx-auto block"
+      style={{ filter: 'drop-shadow(0 16px 48px rgba(180,83,9,0.55)) drop-shadow(0 0 8px rgba(217,119,6,0.2))' }}
       aria-hidden="true"
     >
       <defs>
-        <radialGradient id="coupBg" cx="50%" cy="35%" r="70%">
-          <stop offset="0%" stopColor="#292524" />
-          <stop offset="100%" stopColor="#0c0a09" />
+        <linearGradient id="hBorderGold" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.95" />
+          <stop offset="30%" stopColor="#d97706" stopOpacity="0.85" />
+          <stop offset="70%" stopColor="#92400e" stopOpacity="0.75" />
+          <stop offset="100%" stopColor="#fbbf24" stopOpacity="0.95" />
+        </linearGradient>
+        <radialGradient id="hCardBg" cx="50%" cy="20%" r="90%">
+          <stop offset="0%" stopColor="#1e1208" />
+          <stop offset="100%" stopColor="#060402" />
         </radialGradient>
-        <radialGradient id="coupGlow" cx="50%" cy="35%" r="50%">
-          <stop offset="0%" stopColor="#d97706" stopOpacity="0.2" />
+        <radialGradient id="hEyeGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#d97706" stopOpacity="0.3" />
           <stop offset="100%" stopColor="#d97706" stopOpacity="0" />
         </radialGradient>
-        <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="0" dy="3" stdDeviation="4" floodColor="#000" floodOpacity="0.6" />
+        <filter id="hGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="2.5" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+        <filter id="hStrongGlow" x="-100%" y="-100%" width="300%" height="300%">
+          <feGaussianBlur stdDeviation="4" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
         </filter>
       </defs>
 
-      {/* Background */}
-      <rect width="360" height="200" rx="16" fill="url(#coupBg)" />
-      <rect width="360" height="200" rx="16" fill="url(#coupGlow)" />
-      <rect width="360" height="200" rx="16" fill="none" stroke="#78350f" strokeWidth="1.2" opacity="0.7" />
+      {/* Shadow */}
+      <rect x="15" y="16" width="200" height="276" rx="12" fill="#000" opacity="0.55" />
 
-      {/* Fanned cards — pivot (180, 220), cards are 50×75 centered at (180, 157.5) */}
+      {/* Card body */}
+      <rect x="10" y="10" width="200" height="276" rx="12" fill="url(#hCardBg)" />
 
-      {/* 将軍 — −28° */}
-      <g transform="rotate(-28, 180, 220)" filter="url(#cardShadow)">
-        <rect x="155" y="120" width="50" height="75" rx="5" fill="#1a1230" stroke="#4c1d95" strokeWidth="1.2" />
-        <rect x="158" y="123" width="44" height="69" rx="3" fill="none" stroke="#4c1d95" strokeWidth="0.5" opacity="0.5" />
-        <text x="180" y="163" textAnchor="middle" dominantBaseline="middle" fill="#7c3aed" fontSize="22" fontFamily="serif">★</text>
-        <text x="180" y="185" textAnchor="middle" fill="#6d28d9" fontSize="7.5" fontFamily="sans-serif" letterSpacing="1">将軍</text>
-      </g>
+      {/* Outer gold border */}
+      <rect x="10" y="10" width="200" height="276" rx="12" fill="none"
+        stroke="url(#hBorderGold)" strokeWidth="1.8" />
 
-      {/* 刺客 — −14° */}
-      <g transform="rotate(-14, 180, 220)" filter="url(#cardShadow)">
-        <rect x="155" y="120" width="50" height="75" rx="5" fill="#111827" stroke="#374151" strokeWidth="1" />
-        <rect x="158" y="123" width="44" height="69" rx="3" fill="none" stroke="#374151" strokeWidth="0.5" opacity="0.5" />
-        <text x="180" y="163" textAnchor="middle" dominantBaseline="middle" fill="#6b7280" fontSize="22" fontFamily="serif">☠</text>
-        <text x="180" y="185" textAnchor="middle" fill="#4b5563" fontSize="7.5" fontFamily="sans-serif" letterSpacing="1">刺客</text>
-      </g>
+      {/* Inner border */}
+      <rect x="19" y="19" width="182" height="258" rx="8" fill="none"
+        stroke="#78350f" strokeWidth="0.8" opacity="0.55" />
 
-      {/* 女王 — center (highlighted) */}
-      <g transform="rotate(0, 180, 220)" filter="url(#cardShadow)">
-        <rect x="155" y="118" width="50" height="75" rx="5" fill="#1c1208" stroke="#b45309" strokeWidth="2" />
-        <rect x="158" y="121" width="44" height="69" rx="3" fill="none" stroke="#d97706" strokeWidth="0.5" opacity="0.4" />
-        <text x="180" y="161" textAnchor="middle" dominantBaseline="middle" fill="#d97706" fontSize="24" fontFamily="serif">♛</text>
-        <text x="180" y="183" textAnchor="middle" fill="#b45309" fontSize="7.5" fontFamily="sans-serif" letterSpacing="1">女王</text>
-      </g>
+      {/* Second inner border */}
+      <rect x="25" y="25" width="170" height="246" rx="5" fill="none"
+        stroke="#451a03" strokeWidth="0.5" opacity="0.35" />
 
-      {/* 忍者 — +14° */}
-      <g transform="rotate(14, 180, 220)" filter="url(#cardShadow)">
-        <rect x="155" y="120" width="50" height="75" rx="5" fill="#1a110a" stroke="#92400e" strokeWidth="1" />
-        <rect x="158" y="123" width="44" height="69" rx="3" fill="none" stroke="#92400e" strokeWidth="0.5" opacity="0.5" />
-        <text x="180" y="163" textAnchor="middle" dominantBaseline="middle" fill="#b45309" fontSize="22" fontFamily="serif">✦</text>
-        <text x="180" y="185" textAnchor="middle" fill="#92400e" fontSize="7.5" fontFamily="sans-serif" letterSpacing="1">忍者</text>
-      </g>
+      {/* Corner ornaments — TL */}
+      <path d="M19,40 L19,21 L40,21" fill="none" stroke="#d97706" strokeWidth="1.2" opacity="0.8" />
+      <path d="M23,34 L23,26 L32,26" fill="none" stroke="#b45309" strokeWidth="0.6" opacity="0.5" />
+      {/* TR */}
+      <path d="M201,40 L201,21 L180,21" fill="none" stroke="#d97706" strokeWidth="1.2" opacity="0.8" />
+      <path d="M197,34 L197,26 L188,26" fill="none" stroke="#b45309" strokeWidth="0.6" opacity="0.5" />
+      {/* BL */}
+      <path d="M19,256 L19,275 L40,275" fill="none" stroke="#d97706" strokeWidth="1.2" opacity="0.8" />
+      <path d="M23,262 L23,270 L32,270" fill="none" stroke="#b45309" strokeWidth="0.6" opacity="0.5" />
+      {/* BR */}
+      <path d="M201,256 L201,275 L180,275" fill="none" stroke="#d97706" strokeWidth="1.2" opacity="0.8" />
+      <path d="M197,262 L197,270 L188,270" fill="none" stroke="#b45309" strokeWidth="0.6" opacity="0.5" />
 
-      {/* 海賊 — +28° */}
-      <g transform="rotate(28, 180, 220)" filter="url(#cardShadow)">
-        <rect x="155" y="120" width="50" height="75" rx="5" fill="#0c1322" stroke="#1e3a5f" strokeWidth="1.2" />
-        <rect x="158" y="123" width="44" height="69" rx="3" fill="none" stroke="#1e40af" strokeWidth="0.5" opacity="0.5" />
-        <text x="180" y="163" textAnchor="middle" dominantBaseline="middle" fill="#1d4ed8" fontSize="22" fontFamily="serif">⚓</text>
-        <text x="180" y="185" textAnchor="middle" fill="#1e40af" fontSize="7.5" fontFamily="sans-serif" letterSpacing="1">海賊</text>
-      </g>
+      {/* Eye glow backdrop */}
+      <circle cx={cx} cy={cy} r="88" fill="url(#hEyeGlow)" />
 
-      {/* Crown */}
-      <g transform="translate(180, 68)">
-        {/* Crown body */}
-        <path d="M-40,20 L-40,-4 L-25,-30 L0,-10 L25,-30 L40,-4 L40,20 Z" fill="#d97706" />
-        {/* Crown shading */}
-        <path d="M-40,20 L-40,-4 L-25,-30 L0,-10 L25,-30 L40,-4 L40,20 Z"
-              fill="url(#coupGlow)" opacity="0.4" />
-        {/* Crown outline */}
-        <path d="M-40,20 L-40,-4 L-25,-30 L0,-10 L25,-30 L40,-4 L40,20 Z"
-              fill="none" stroke="#fbbf24" strokeWidth="0.7" opacity="0.4" />
-        {/* Base band */}
-        <rect x="-40" y="12" width="80" height="10" rx="2" fill="#92400e" />
-        <rect x="-40" y="12" width="80" height="4" rx="1" fill="#b45309" opacity="0.5" />
-        {/* Top gem */}
-        <ellipse cx="0" cy="-5" rx="5.5" ry="5.5" fill="#fbbf24" />
-        <ellipse cx="-1.5" cy="-7" rx="2" ry="2" fill="white" opacity="0.45" />
-        {/* Side gems */}
-        <ellipse cx="-27" cy="3" rx="3.5" ry="3.5" fill="#f59e0b" />
-        <ellipse cx="27" cy="3" rx="3.5" ry="3.5" fill="#f59e0b" />
-        <ellipse cx="-28" cy="2" rx="1" ry="1" fill="white" opacity="0.3" />
-        <ellipse cx="26" cy="2" rx="1" ry="1" fill="white" opacity="0.3" />
-      </g>
+      {/* Long starburst */}
+      {longRays.map((r, i) => (
+        <line key={`lr${i}`} x1={r.x1} y1={r.y1} x2={r.x2} y2={r.y2}
+          stroke="#b45309" strokeWidth="1" opacity="0.5" />
+      ))}
+      {/* Short rays */}
+      {shortRays.map((r, i) => (
+        <line key={`sr${i}`} x1={r.x1} y1={r.y1} x2={r.x2} y2={r.y2}
+          stroke="#92400e" strokeWidth="0.7" opacity="0.35" />
+      ))}
 
-      {/* Decorative horizontal rules flanking the crown */}
-      <line x1="28" y1="98" x2="115" y2="98" stroke="#44403c" strokeWidth="0.5" opacity="0.5" />
-      <line x1="245" y1="98" x2="332" y2="98" stroke="#44403c" strokeWidth="0.5" opacity="0.5" />
-      <circle cx="120" cy="98" r="2" fill="#78350f" opacity="0.6" />
-      <circle cx="240" cy="98" r="2" fill="#78350f" opacity="0.6" />
+      {/* Outer dashed ring */}
+      <circle cx={cx} cy={cy} r="80" fill="none" stroke="#78350f" strokeWidth="0.6"
+        strokeDasharray="6 5" opacity="0.35" />
+      {/* Mid ring */}
+      <circle cx={cx} cy={cy} r="64" fill="none" stroke="#92400e" strokeWidth="0.7" opacity="0.4" />
+      {/* Main decorative ring */}
+      <circle cx={cx} cy={cy} r="46" fill="none" stroke="#d97706" strokeWidth="1.1" opacity="0.75"
+        filter="url(#hGlow)" />
+      {/* Inner circle base */}
+      <circle cx={cx} cy={cy} r="32" fill="#0a0703" />
+      <circle cx={cx} cy={cy} r="32" fill="none" stroke="#d97706" strokeWidth="1" opacity="0.85" />
 
-      {/* Corner ornaments */}
-      <text x="20" y="32" fill="#78350f" fontSize="9" opacity="0.45" fontFamily="serif">✦</text>
-      <text x="333" y="32" fill="#78350f" fontSize="9" opacity="0.45" fontFamily="serif">✦</text>
-      <text x="20" y="192" fill="#78350f" fontSize="9" opacity="0.3" fontFamily="serif">✦</text>
-      <text x="333" y="192" fill="#78350f" fontSize="9" opacity="0.3" fontFamily="serif">✦</text>
+      {/* Geometric marks on main ring */}
+      {[0, 90, 180, 270].map((deg, i) => {
+        const a = deg * Math.PI / 180;
+        return (
+          <circle key={i} cx={cx + 46 * Math.cos(a)} cy={cy + 46 * Math.sin(a)}
+            r="2.5" fill="#d97706" opacity="0.8" />
+        );
+      })}
+
+      {/* Eye shape */}
+      <ellipse cx={cx} cy={cy} rx="24" ry="14" fill="#100b05" />
+      {/* Top lid */}
+      <path d={`M${cx - 24},${cy} Q${cx},${cy - 20} ${cx + 24},${cy}`}
+        fill="none" stroke="#d97706" strokeWidth="1" opacity="0.9" />
+      {/* Bottom lid */}
+      <path d={`M${cx - 24},${cy} Q${cx},${cy + 15} ${cx + 24},${cy}`}
+        fill="none" stroke="#d97706" strokeWidth="1" opacity="0.9" />
+
+      {/* Iris */}
+      <circle cx={cx} cy={cy} r="11" fill="#7c2d0a" filter="url(#hStrongGlow)" opacity="0.9" />
+      <circle cx={cx} cy={cy} r="9" fill="#c2410c" opacity="0.7" />
+      {/* Pupil */}
+      <circle cx={cx} cy={cy} r="5.5" fill="#050302" />
+      {/* Eye highlights */}
+      <circle cx={cx - 3} cy={cy - 3} r="2" fill="white" opacity="0.35" />
+      <circle cx={cx + 4} cy={cy + 2} r="1" fill="white" opacity="0.15" />
+
+      {/* Sparkle dots */}
+      <circle cx="42" cy="52" r="1.8" fill="#fbbf24" opacity="0.65" />
+      <path d="M42,47 L42,57 M37,52 L47,52" stroke="#fbbf24" strokeWidth="0.7" opacity="0.45" />
+
+      <circle cx="180" cy="46" r="1.2" fill="#fbbf24" opacity="0.5" />
+      <path d="M180,42 L180,50 M176,46 L184,46" stroke="#fbbf24" strokeWidth="0.6" opacity="0.35" />
+
+      <circle cx="32" cy="175" r="1.2" fill="#fbbf24" opacity="0.4" />
+      <circle cx="192" cy="210" r="1" fill="#fbbf24" opacity="0.35" />
+      <circle cx="168" cy="252" r="1.5" fill="#fbbf24" opacity="0.5" />
+      <path d="M168,248 L168,256 M164,252 L172,252" stroke="#fbbf24" strokeWidth="0.6" opacity="0.35" />
     </svg>
   );
 }

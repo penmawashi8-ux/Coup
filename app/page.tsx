@@ -24,12 +24,79 @@ async function apiPost(url: string, body: unknown): Promise<{ ok: boolean; data:
   return { ok: res.ok, data };
 }
 
+function IconSwords() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <line x1="3" y1="3" x2="23" y2="23" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <line x1="23" y1="3" x2="3" y2="23" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <line x1="3" y1="7" x2="7" y2="3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="19" y1="3" x2="23" y2="7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <circle cx="13" cy="13" r="2.5" fill="currentColor" opacity="0.5" />
+    </svg>
+  );
+}
+
+function IconPlayers() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="9" cy="9" r="4" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M2,22 C2,17.6 5.1,14 9,14 C12.9,14 16,17.6 16,22" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="18" cy="9" r="3" stroke="currentColor" strokeWidth="1.5" opacity="0.7" />
+      <path d="M15,22 C15.5,18.8 16.6,16.5 18,15.5 C19.4,14.5 21,14.8 22,16 C23,17.2 24,19.2 24,22" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.7" />
+    </svg>
+  );
+}
+
+function IconDoor() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="6" y="3" width="14" height="20" rx="1.5" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="17" cy="13" r="1.5" fill="currentColor" />
+      <path d="M13,13 L20,13 M17,10 L20,13 L17,16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function MenuButton({ onClick, icon, label, sub }: {
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+  sub: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full relative group flex items-center gap-4 px-5 py-4 transition-colors"
+      style={{
+        background: 'rgba(0,0,0,0.25)',
+        border: '1px solid rgba(180,83,9,0.55)',
+      }}
+    >
+      {/* Corner marks */}
+      <span className="absolute top-[-1px] left-[-1px] w-3 h-3 border-t-2 border-l-2 border-amber-500/70 pointer-events-none" />
+      <span className="absolute top-[-1px] right-[-1px] w-3 h-3 border-t-2 border-r-2 border-amber-500/70 pointer-events-none" />
+      <span className="absolute bottom-[-1px] left-[-1px] w-3 h-3 border-b-2 border-l-2 border-amber-500/70 pointer-events-none" />
+      <span className="absolute bottom-[-1px] right-[-1px] w-3 h-3 border-b-2 border-r-2 border-amber-500/70 pointer-events-none" />
+      {/* Hover overlay */}
+      <span className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+        style={{ background: 'rgba(180,83,9,0.08)' }} />
+
+      <span className="text-amber-600/80 shrink-0 relative z-10">{icon}</span>
+      <span className="flex-1 text-left relative z-10">
+        <span className="block font-bold text-base text-amber-200/90 tracking-wide">{label}</span>
+        <span className="block text-xs mt-0.5" style={{ color: 'rgba(180,83,9,0.75)' }}>{sub}</span>
+      </span>
+      <span className="text-amber-800/60 text-xs relative z-10">◆</span>
+    </button>
+  );
+}
+
 function HomeInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<'menu' | 'cpu' | 'online_create' | 'online_join'>('menu');
   const [name, setName] = useState('');
-  const [totalPlayers, setTotalPlayers] = useState(2); // CPU mode: total including self
+  const [totalPlayers, setTotalPlayers] = useState(2);
   const [roomCode, setRoomCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -87,149 +154,193 @@ function HomeInner() {
 
   const PLAYER_OPTIONS = [2, 3, 4, 5, 6];
 
+  const inputCls = "w-full px-3 py-2.5 rounded text-white text-sm border focus:outline-none focus:border-amber-600/70 transition-colors";
+  const inputStyle = { background: 'rgba(0,0,0,0.5)', borderColor: 'rgba(180,83,9,0.4)', color: '#fff' };
+
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <CoupHeroImage />
-          <h1 className="text-5xl font-black tracking-widest text-amber-400 mt-4 mb-1">謀略</h1>
-          <p className="text-gray-400 text-sm">ブラフとチャレンジの心理戦</p>
-        </div>
+    <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
+      style={{ background: '#080503' }}>
 
-        {mode === 'menu' && (
-          <div className="space-y-4">
-            <button
-              onClick={() => { setMode('cpu'); setTotalPlayers(2); }}
-              className="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-4 rounded-xl text-lg transition-colors"
-            >
-              CPU対戦
-            </button>
-            <button
-              onClick={() => setMode('online_create')}
-              className="w-full bg-blue-700 hover:bg-blue-600 text-white font-bold py-4 rounded-xl text-lg transition-colors"
-            >
-              オンライン対戦（ルーム作成）
-            </button>
-            <button
-              onClick={() => setMode('online_join')}
-              className="w-full bg-green-700 hover:bg-green-600 text-white font-bold py-4 rounded-xl text-lg transition-colors"
-            >
-              ルームに参加
-            </button>
-            <div className="mt-4 p-4 bg-gray-800 rounded-lg text-sm text-gray-400">
-              <h3 className="text-gray-300 font-semibold mb-1">ゲームについて</h3>
-              <p>謀略は2〜6人のブラフゲームです。キャラクターカードを使い、相手の影響力をすべて除去した最後の1人が勝者。嘘をついても、チャレンジされなければ成功します。</p>
-            </div>
+      {/* Spotlight beam */}
+      <div className="absolute inset-0 pointer-events-none" style={{
+        background: 'radial-gradient(ellipse 80% 55% at 50% -8%, rgba(180,83,9,0.45) 0%, rgba(120,53,15,0.15) 40%, transparent 65%)',
+      }} />
+
+      <div className="relative z-10 w-full max-w-sm px-5 flex flex-col items-center"
+        style={{ paddingTop: mode === 'menu' ? '2rem' : '1.5rem', paddingBottom: '2rem' }}>
+
+        {/* ── MENU ── */}
+        {mode === 'menu' && (<>
+          {/* Hero card */}
+          <div style={{ transform: 'rotate(-6deg)', marginBottom: '1.5rem' }}>
+            <CoupHeroImage />
           </div>
-        )}
 
+          {/* Title */}
+          <h1
+            className="font-black tracking-[0.25em] leading-none"
+            style={{
+              fontSize: '3.4rem',
+              color: '#f59e0b',
+              textShadow: '0 0 32px rgba(217,119,6,0.7), 0 0 70px rgba(180,83,9,0.35)',
+            }}
+          >
+            謀・略
+          </h1>
+
+          {/* Subtitle */}
+          <div className="flex items-center w-full gap-3 mt-3 mb-8">
+            <div className="flex-1 h-px" style={{ background: 'linear-gradient(to right, transparent, rgba(180,83,9,0.6))' }} />
+            <p className="text-xs tracking-widest whitespace-nowrap" style={{ color: 'rgba(180,83,9,0.75)' }}>
+              ブラフと心理戦のカードゲーム
+            </p>
+            <div className="flex-1 h-px" style={{ background: 'linear-gradient(to left, transparent, rgba(180,83,9,0.6))' }} />
+          </div>
+
+          {/* Buttons */}
+          <div className="w-full space-y-3">
+            <MenuButton
+              onClick={() => { setMode('cpu'); setTotalPlayers(2); }}
+              icon={<IconSwords />}
+              label="CPU対戦"
+              sub="AIと心理戦を繰り広げる"
+            />
+            <MenuButton
+              onClick={() => setMode('online_create')}
+              icon={<IconPlayers />}
+              label="オンライン対戦（ルーム作成）"
+              sub="オンラインで他のプレイヤーと対戦"
+            />
+            <MenuButton
+              onClick={() => setMode('online_join')}
+              icon={<IconDoor />}
+              label="ルームに参加"
+              sub="招待されたルームに参加する"
+            />
+          </div>
+
+          {/* Description */}
+          <div className="mt-5 w-full p-4 rounded text-sm"
+            style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(120,53,15,0.35)' }}>
+            <h3 className="font-semibold mb-1.5 text-amber-600/80 text-xs tracking-wider uppercase">ゲームについて</h3>
+            <p className="leading-relaxed" style={{ color: 'rgba(217,180,120,0.65)', fontSize: '0.78rem' }}>
+              謀略は2〜6人のブラフゲームです。キャラクターカードを使い、相手の影響力をすべて除去した最後の1人が勝者。嘘をついても、読み合っても、すべてはあなたの選択次第。
+            </p>
+          </div>
+        </>)}
+
+        {/* ── CPU MODE ── */}
         {mode === 'cpu' && (
-          <div className="bg-gray-800 rounded-xl p-6 space-y-5">
-            <button onClick={() => setMode('menu')} className="text-gray-400 hover:text-white text-sm">← 戻る</button>
-            <h2 className="text-white font-bold text-xl">CPU対戦</h2>
+          <div className="w-full space-y-5 rounded p-6"
+            style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(180,83,9,0.35)' }}>
+            <button onClick={() => setMode('menu')} className="text-xs" style={{ color: 'rgba(180,83,9,0.7)' }}>← 戻る</button>
+            <h2 className="font-bold text-lg" style={{ color: '#f59e0b' }}>CPU対戦</h2>
 
-            {/* Name */}
             <div>
-              <label className="text-gray-300 text-sm block mb-1">あなたの名前（空欄でランダム）</label>
+              <label className="block mb-1.5 text-xs" style={{ color: 'rgba(217,180,120,0.6)' }}>あなたの名前（空欄でランダム）</label>
               <input
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder={randomName()}
-                className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:outline-none focus:border-amber-400"
+                className={inputCls}
+                style={inputStyle}
               />
             </div>
 
-            {/* Total players selector */}
             <div>
-              <label className="text-gray-300 text-sm block mb-2">プレイヤー総数（CPU含む）</label>
+              <label className="block mb-2 text-xs" style={{ color: 'rgba(217,180,120,0.6)' }}>プレイヤー総数（CPU含む）</label>
               <div className="grid grid-cols-5 gap-2">
                 {PLAYER_OPTIONS.map(n => (
                   <button
                     key={n}
                     onClick={() => setTotalPlayers(n)}
-                    className={`py-3 rounded-xl text-lg font-bold transition-colors ${
-                      totalPlayers === n
-                        ? 'bg-amber-500 text-black'
-                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    }`}
+                    className="py-2.5 rounded text-sm font-bold transition-colors"
+                    style={totalPlayers === n
+                      ? { background: '#d97706', color: '#000' }
+                      : { background: 'rgba(0,0,0,0.4)', color: 'rgba(217,180,120,0.6)', border: '1px solid rgba(120,53,15,0.4)' }}
                   >
                     {n}
                   </button>
                 ))}
               </div>
-              <p className="text-gray-500 text-xs mt-2">あなた1人 + CPU {totalPlayers - 1}体</p>
+              <p className="text-xs mt-2" style={{ color: 'rgba(120,53,15,0.8)' }}>あなた1人 + CPU {totalPlayers - 1}体</p>
             </div>
 
-            {error && <p className="text-red-400 text-sm">{error}</p>}
+            {error && <p className="text-sm" style={{ color: '#f87171' }}>{error}</p>}
             <button
               onClick={startCPUGame}
               disabled={loading}
-              className="w-full bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-colors"
+              className="w-full font-bold py-3 rounded transition-colors disabled:opacity-50"
+              style={{ background: 'rgba(180,83,9,0.8)', color: '#fff', border: '1px solid rgba(251,191,36,0.4)' }}
             >
               {loading ? '準備中...' : 'ゲーム開始'}
             </button>
           </div>
         )}
 
+        {/* ── ONLINE CREATE ── */}
         {mode === 'online_create' && (
-          <div className="bg-gray-800 rounded-xl p-6 space-y-5">
-            <button onClick={() => setMode('menu')} className="text-gray-400 hover:text-white text-sm">← 戻る</button>
-            <h2 className="text-white font-bold text-xl">オンラインルーム作成</h2>
-            <div className="p-3 bg-blue-900/40 border border-blue-600 rounded-lg text-sm text-blue-200">
-              ルームを作ってコードを友達に共有。ゲーム開始時に人数が足りなければCPUが自動補充されます。
+          <div className="w-full space-y-5 rounded p-6"
+            style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(180,83,9,0.35)' }}>
+            <button onClick={() => setMode('menu')} className="text-xs" style={{ color: 'rgba(180,83,9,0.7)' }}>← 戻る</button>
+            <h2 className="font-bold text-lg" style={{ color: '#f59e0b' }}>オンラインルーム作成</h2>
+            <div className="p-3 rounded text-sm" style={{ background: 'rgba(30,58,138,0.2)', border: '1px solid rgba(30,64,175,0.4)', color: 'rgba(147,197,253,0.8)' }}>
+              ルームを作ってコードを友達に共有。開始時に人数が足りなければCPUが自動補充されます。
             </div>
-
             <div>
-              <label className="text-gray-300 text-sm block mb-1">あなたの名前（空欄でランダム）</label>
+              <label className="block mb-1.5 text-xs" style={{ color: 'rgba(217,180,120,0.6)' }}>あなたの名前（空欄でランダム）</label>
               <input
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder={randomName()}
-                className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:outline-none focus:border-amber-400"
+                className={inputCls}
+                style={inputStyle}
               />
             </div>
-
-            {error && <p className="text-red-400 text-sm">{error}</p>}
+            {error && <p className="text-sm" style={{ color: '#f87171' }}>{error}</p>}
             <button
               onClick={createOnlineRoom}
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-colors"
+              className="w-full font-bold py-3 rounded transition-colors disabled:opacity-50"
+              style={{ background: 'rgba(29,78,216,0.7)', color: '#fff', border: '1px solid rgba(96,165,250,0.35)' }}
             >
               {loading ? '準備中...' : 'ルーム作成'}
             </button>
           </div>
         )}
 
+        {/* ── ONLINE JOIN ── */}
         {mode === 'online_join' && (
-          <div className="bg-gray-800 rounded-xl p-6 space-y-5">
-            <button onClick={() => setMode('menu')} className="text-gray-400 hover:text-white text-sm">← 戻る</button>
-            <h2 className="text-white font-bold text-xl">ルームに参加</h2>
-
+          <div className="w-full space-y-5 rounded p-6"
+            style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(180,83,9,0.35)' }}>
+            <button onClick={() => setMode('menu')} className="text-xs" style={{ color: 'rgba(180,83,9,0.7)' }}>← 戻る</button>
+            <h2 className="font-bold text-lg" style={{ color: '#f59e0b' }}>ルームに参加</h2>
             <div>
-              <label className="text-gray-300 text-sm block mb-1">あなたの名前（空欄でランダム）</label>
+              <label className="block mb-1.5 text-xs" style={{ color: 'rgba(217,180,120,0.6)' }}>あなたの名前（空欄でランダム）</label>
               <input
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder={randomName()}
-                className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:outline-none focus:border-amber-400"
+                className={inputCls}
+                style={inputStyle}
               />
             </div>
-
             <div>
-              <label className="text-gray-300 text-sm block mb-1">ルームコード</label>
+              <label className="block mb-1.5 text-xs" style={{ color: 'rgba(217,180,120,0.6)' }}>ルームコード</label>
               <input
                 value={roomCode}
                 onChange={e => setRoomCode(e.target.value.toUpperCase())}
                 placeholder="例: A1B2C3"
-                className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:outline-none focus:border-amber-400 font-mono text-2xl tracking-widest text-center"
+                className={`${inputCls} font-mono text-2xl tracking-widest text-center`}
+                style={inputStyle}
               />
             </div>
-
-            {error && <p className="text-red-400 text-sm">{error}</p>}
+            {error && <p className="text-sm" style={{ color: '#f87171' }}>{error}</p>}
             <button
               onClick={joinOnlineRoom}
               disabled={loading}
-              className="w-full bg-green-700 hover:bg-green-600 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-colors"
+              className="w-full font-bold py-3 rounded transition-colors disabled:opacity-50"
+              style={{ background: 'rgba(21,128,61,0.7)', color: '#fff', border: '1px solid rgba(74,222,128,0.35)' }}
             >
               {loading ? '参加中...' : '参加する'}
             </button>
