@@ -94,6 +94,8 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
   const tickerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipElimRef = useRef(false); // set true when player presses skip after elimination
   const [skipRequested, setSkipRequested] = useState(false);
+  const [elimSkipReady, setElimSkipReady] = useState(false); // delayed to prevent accidental tap
+  const myNameRef = useRef(''); // tracked via ref so drainTickerQueue can read latest value
 
   function drainTickerQueue() {
     const next = tickerQueueRef.current.shift();
@@ -107,10 +109,11 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
       return;
     }
 
-    // Route important events to the center overlay; routine events to the small top ticker.
+    // Events mentioning the player directly, or known high-impact keywords → big event
     const isBigEvent =
       next.startsWith('✅') || next.startsWith('❌') ||
-      /脱落|勝利|暗殺|クーデター|影響力-1/.test(next);
+      /脱落|勝利|暗殺|クーデター|影響力-1/.test(next) ||
+      (myNameRef.current !== '' && next.includes(myNameRef.current));
 
     // If player pressed "skip after elimination", fast-forward routine events.
     if (skipElimRef.current && !isBigEvent) {
@@ -127,17 +130,17 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
         : /脱落|クーデター|暗殺/.test(next) ? 'elim'
         : 'neutral';
       setEventOverlay({ text: next, kind });
-      // 脱落は少し長めに表示して原因を読めるように
-      const delay = /勝利/.test(next) ? 4000 : /脱落/.test(next) ? 3500 : 2800;
+      const delay = /勝利/.test(next) ? 4500 : /脱落/.test(next) ? 5000 : 3200;
       tickerTimerRef.current = setTimeout(drainTickerQueue, delay);
     } else {
       setEventOverlay(null);
       setTicker(next);
-      tickerTimerRef.current = setTimeout(drainTickerQueue, 1600);
+      tickerTimerRef.current = setTimeout(drainTickerQueue, 2000);
     }
   }
 
   const me = state.players.find(p => p.id === playerId);
+  myNameRef.current = me?.name ?? '';
   const currentPlayer = state.players[state.currentPlayerIndex];
   const isMyTurn = currentPlayer?.id === playerId;
   const pa = state.pendingAction;
@@ -183,6 +186,17 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
     // displayedPlayers will be updated when drainTickerQueue empties the queue
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.log]);
+
+  // Delay the skip button by 2s after elimination to prevent accidental taps
+  useEffect(() => {
+    if (me && !me.isAlive && !isOnline) {
+      const t = setTimeout(() => setElimSkipReady(true), 2000);
+      return () => clearTimeout(t);
+    } else {
+      setElimSkipReady(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [me?.isAlive, isOnline]);
 
   const prevPhaseRef = useRef<string>('');
   useEffect(() => {
@@ -342,8 +356,8 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
   // While the ticker / overlay is replaying events, always freeze the action panel
   // so the board and narrative stay in sync before the human is asked to act.
   const tickerActive = !!ticker || !!eventOverlay;
-  // CPU戦で自分が脱落後、まだticker再生中であればスキップボタンを表示
-  const showElimSkip = !isOnline && me != null && !me.isAlive && tickerActive && !skipRequested;
+  // CPU戦で自分が脱落後、2秒待ってからスキップボタンを表示（誤タップ防止）
+  const showElimSkip = elimSkipReady && !isOnline && me != null && !me.isAlive && tickerActive && !skipRequested;
 
   // Block options for my reaction
   const getBlockOptions = () => {
