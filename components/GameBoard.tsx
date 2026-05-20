@@ -29,7 +29,7 @@ const ACTION_DESC: Record<ActionType, string> = {
   tax: '将軍役を主張し、財務省から3コイン取る。',
   assassinate: '3コイン支払い、対象の影響力1つを除去。女王でブロック可。',
   steal: '海賊役を主張し、対象から2コイン盗む。忍者/海賊でブロック可。',
-  exchange: '忍者役を主張し、Court山から2枚引いてカードを交換する。',
+  exchange: '忍者役を主張し、山札から2枚引いてカードを交換する。',
 };
 
 const CHAR_LABELS: Record<Character, string> = {
@@ -579,7 +579,7 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
                     { char: '将軍', bg: 'rgba(88,28,135,0.4)', border: 'rgba(147,51,234,0.4)', symbol: '★', action: '徴収', cost: '', effect: '財務省から 3コイン取る', block: '—' },
                     { char: '刺客', bg: 'rgba(30,27,30,0.5)', border: 'rgba(113,113,122,0.4)', symbol: '☠', action: '暗殺', cost: '3◆', effect: '対象の影響力1つを除去', block: '女王（対象のみ）' },
                     { char: '海賊', bg: 'rgba(30,58,138,0.4)', border: 'rgba(59,130,246,0.4)', symbol: '⚓', action: '強奪', cost: '', effect: '対象から 2コイン盗む（1枚以下なら全部）', block: '忍者 / 海賊（対象のみ）' },
-                    { char: '忍者', bg: 'rgba(120,53,15,0.35)', border: 'rgba(245,158,11,0.45)', symbol: '✦', action: '探索', cost: '', effect: 'Court山から2枚引いて、手札と好きに交換し2枚返す', block: '—' },
+                    { char: '忍者', bg: 'rgba(120,53,15,0.35)', border: 'rgba(245,158,11,0.45)', symbol: '✦', action: '探索', cost: '', effect: '山札から2枚引いて、手札と好きに交換し余った2枚を戻す', block: '—' },
                   ].map(a => (
                     <div key={a.char} className="rounded px-3 py-2" style={{ background: a.bg, border: `1px solid ${a.border}` }}>
                       <div className="flex items-center gap-2 mb-1">
