@@ -57,6 +57,15 @@ function IconDoor() {
   );
 }
 
+function IconBook() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M4 5.5 C7 4.5 10 4.5 13 5.5 L13 21.5 C10 20.5 7 20.5 4 21.5 Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M22 5.5 C19 4.5 16 4.5 13 5.5 L13 21.5 C16 20.5 19 20.5 22 21.5 Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function MenuButton({ onClick, icon, label, sub }: {
   onClick: () => void;
   icon: React.ReactNode;
@@ -95,6 +104,7 @@ function HomeInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<'menu' | 'cpu' | 'online_create' | 'online_join'>('menu');
+  const [showRules, setShowRules] = useState(false);
   const [name, setName] = useState('');
   const [totalPlayers, setTotalPlayers] = useState(2);
   const [roomCode, setRoomCode] = useState('');
@@ -216,6 +226,12 @@ function HomeInner() {
               icon={<IconDoor />}
               label="ルームに参加"
               sub="招待されたルームに参加する"
+            />
+            <MenuButton
+              onClick={() => setShowRules(true)}
+              icon={<IconBook />}
+              label="ルールを見る"
+              sub="キャラクターとアクションの一覧"
             />
           </div>
 
@@ -347,6 +363,125 @@ function HomeInner() {
           </div>
         )}
       </div>
+
+      {/* Rules modal */}
+      {showRules && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.75)' }}
+          onClick={() => setShowRules(false)}
+        >
+          <div
+            className="rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg max-h-[90vh] flex flex-col"
+            style={{ background: '#0d0a07', border: '1px solid rgba(180,83,9,0.4)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="shrink-0 px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(180,83,9,0.3)' }}>
+              <h2 className="font-bold text-base tracking-wide" style={{ color: '#fbbf24' }}>ルール早見表</h2>
+              <button
+                onClick={() => setShowRules(false)}
+                className="text-sm font-semibold px-3 py-1.5 rounded-full"
+                style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(180,83,9,0.35)', color: 'rgba(217,180,120,0.8)' }}
+              >
+                × 閉じる
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-4 space-y-5 text-sm">
+              <section>
+                <h3 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'rgba(180,83,9,0.6)' }}>一般アクション（常に使用可）</h3>
+                <div className="space-y-1">
+                  {[
+                    { name: '収入', cost: '', effect: '財務省から 1コイン取る', block: '×', challenge: '×' },
+                    { name: '外国援助', cost: '', effect: '財務省から 2コイン取る', block: '将軍', challenge: '×' },
+                    { name: 'クーデター', cost: '7◆', effect: '対象の影響力1つを強制除去（必ず成功）', block: '×', challenge: '×' },
+                  ].map(a => (
+                    <div key={a.name} className="rounded px-3 py-2 flex gap-3 items-start" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(120,53,15,0.3)' }}>
+                      <div className="min-w-[80px]">
+                        <span className="font-semibold text-sm" style={{ color: 'rgba(255,255,255,0.85)' }}>{a.name}</span>
+                        {a.cost && <span className="text-xs ml-1" style={{ color: '#fbbf24' }}>{a.cost}</span>}
+                      </div>
+                      <div className="flex-1 text-xs" style={{ color: 'rgba(217,180,120,0.65)' }}>{a.effect}</div>
+                      <div className="text-right text-xs space-y-0.5 shrink-0">
+                        <div style={{ color: a.block === '×' ? 'rgba(75,85,99,0.7)' : '#93c5fd' }}>B: {a.block}</div>
+                        <div style={{ color: a.challenge === '×' ? 'rgba(75,85,99,0.7)' : '#fca5a5' }}>⚔ {a.challenge}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section>
+                <h3 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'rgba(180,83,9,0.6)' }}>キャラクターアクション（チャレンジされる可能性あり）</h3>
+                <div className="space-y-1">
+                  {[
+                    { char: '将軍', bg: 'rgba(88,28,135,0.4)', border: 'rgba(147,51,234,0.4)', symbol: '★', action: '徴収', cost: '', effect: '財務省から 3コイン取る', block: '—' },
+                    { char: '刺客', bg: 'rgba(30,27,30,0.5)', border: 'rgba(113,113,122,0.4)', symbol: '☠', action: '暗殺', cost: '3◆', effect: '対象の影響力1つを除去', block: '女王（対象のみ）' },
+                    { char: '海賊', bg: 'rgba(30,58,138,0.4)', border: 'rgba(59,130,246,0.4)', symbol: '⚓', action: '強奪', cost: '', effect: '対象から 2コイン盗む（1枚以下なら全部）', block: '忍者 / 海賊（対象のみ）' },
+                    { char: '忍者', bg: 'rgba(120,53,15,0.35)', border: 'rgba(245,158,11,0.45)', symbol: '✦', action: '探索', cost: '', effect: 'Court山から2枚引いて、手札と好きに交換し2枚返す', block: '—' },
+                  ].map(a => (
+                    <div key={a.char} className="rounded px-3 py-2" style={{ background: a.bg, border: `1px solid ${a.border}` }}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-base">{a.symbol}</span>
+                        <span className="font-bold text-sm text-white">{a.char}</span>
+                        <span className="font-semibold text-xs" style={{ color: 'rgba(217,180,120,0.75)' }}>→ {a.action}</span>
+                        {a.cost && <span className="text-xs" style={{ color: '#fbbf24' }}>{a.cost}</span>}
+                      </div>
+                      <p className="text-xs ml-6" style={{ color: 'rgba(217,180,120,0.65)' }}>{a.effect}</p>
+                      {a.block !== '—' && <p className="text-xs ml-6 mt-0.5" style={{ color: '#93c5fd' }}>ブロック: {a.block}</p>}
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section>
+                <h3 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'rgba(180,83,9,0.6)' }}>ブロック（カウンターアクション）</h3>
+                <div className="rounded overflow-hidden" style={{ border: '1px solid rgba(120,53,15,0.35)' }}>
+                  {[
+                    { blocker: '将軍 ★', blocks: '外国援助', who: '誰でも', color: '#c084fc' },
+                    { blocker: '女王 ♛', blocks: '暗殺', who: '対象プレイヤーのみ', color: '#f87171' },
+                    { blocker: '忍者 ✦', blocks: '強奪', who: '対象プレイヤーのみ', color: '#fbbf24' },
+                    { blocker: '海賊 ⚓', blocks: '強奪', who: '対象プレイヤーのみ', color: '#60a5fa' },
+                  ].map((b, i) => (
+                    <div key={b.blocker + b.blocks} className="px-3 py-2 flex items-center gap-2" style={{ background: 'rgba(0,0,0,0.25)', borderTop: i > 0 ? '1px solid rgba(120,53,15,0.2)' : undefined }}>
+                      <span className="font-semibold min-w-[120px] text-xs" style={{ color: b.color }}>{b.blocker}</span>
+                      <span className="text-xs" style={{ color: 'rgba(120,53,15,0.7)' }}>が</span>
+                      <span className="font-semibold text-xs" style={{ color: 'rgba(255,255,255,0.8)' }}>{b.blocks}</span>
+                      <span className="text-xs ml-auto" style={{ color: 'rgba(120,53,15,0.65)' }}>{b.who}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section>
+                <h3 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'rgba(180,83,9,0.6)' }}>チャレンジのルール</h3>
+                <div className="rounded p-3 space-y-2 text-xs" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(120,53,15,0.3)', color: 'rgba(217,180,120,0.65)' }}>
+                  <div className="flex gap-2"><span className="shrink-0" style={{ color: '#4ade80' }}>✓ 成功</span><span>チャレンジされた側がカードを見せた場合 → チャレンジした側が影響力を1つ失う。見せたカードはデッキに戻し新しいカードを引く</span></div>
+                  <div className="flex gap-2"><span className="shrink-0" style={{ color: '#f87171' }}>✗ 失敗</span><span>カードを持っていなかった場合 → チャレンジされた側が影響力を1つ失い、アクション失敗（有料アクションはコイン返還）</span></div>
+                  <div className="flex gap-2 pt-1" style={{ borderTop: '1px solid rgba(120,53,15,0.3)' }}><span className="shrink-0" style={{ color: '#fbbf24' }}>⚠ 注意</span><span>暗殺にチャレンジして負けた場合、チャレンジ失敗の1つ＋暗殺の1つで計2影響力を失う可能性あり</span></div>
+                </div>
+              </section>
+
+              <section>
+                <h3 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'rgba(180,83,9,0.6)' }}>影響力・勝利条件</h3>
+                <div className="rounded p-3 space-y-1 text-xs" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(120,53,15,0.3)', color: 'rgba(217,180,120,0.65)' }}>
+                  <p>各プレイヤーは2枚の伏せカード（影響力）を持つ</p>
+                  <p>影響力を失うたびにカードを1枚公開する</p>
+                  <p>2枚とも公開されたプレイヤーは脱落</p>
+                  <p className="font-semibold" style={{ color: '#fbbf24' }}>最後に残った1人が勝利</p>
+                </div>
+              </section>
+
+              <button
+                onClick={() => setShowRules(false)}
+                className="w-full mt-2 font-semibold py-4 rounded text-base"
+                style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(180,83,9,0.35)', color: 'rgba(217,180,120,0.8)' }}
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
