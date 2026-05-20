@@ -387,6 +387,35 @@ function HomeInner() {
               </button>
             </div>
             <div className="overflow-y-auto flex-1 p-4 space-y-5 text-sm">
+
+              <section>
+                <h3 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'rgba(180,83,9,0.6)' }}>ゲームの進め方</h3>
+                <div className="space-y-2 text-xs" style={{ color: 'rgba(217,180,120,0.7)' }}>
+                  <div className="rounded p-3 space-y-2" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(120,53,15,0.3)' }}>
+                    <p className="font-semibold" style={{ color: 'rgba(255,255,255,0.75)' }}>準備</p>
+                    <p>各プレイヤーは伏せカード2枚（影響力）と2コインを受け取ってスタート。</p>
+                  </div>
+                  <div className="rounded p-3 space-y-2" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(120,53,15,0.3)' }}>
+                    <p className="font-semibold" style={{ color: 'rgba(255,255,255,0.75)' }}>自分のターン</p>
+                    <p>アクションを1つ宣言する。キャラクターアクションは実際にそのカードを持っていなくても宣言できる（ブラフOK）。</p>
+                    <p style={{ color: 'rgba(245,158,11,0.8)' }}>⚠ コインが10枚以上あるときはクーデター必須。</p>
+                  </div>
+                  <div className="rounded p-3 space-y-2" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(120,53,15,0.3)' }}>
+                    <p className="font-semibold" style={{ color: 'rgba(255,255,255,0.75)' }}>他プレイヤーの反応</p>
+                    <div className="space-y-1.5">
+                      <p><span style={{ color: '#f87171' }}>チャレンジ</span> — 「そのキャラ持ってないだろ」と疑う。チャレンジされた側がカードを公開して証明。</p>
+                      <p className="pl-3" style={{ color: 'rgba(180,180,180,0.6)' }}>・本物を見せた → チャレンジした側が影響力-1、見せたカードは引き直し</p>
+                      <p className="pl-3" style={{ color: 'rgba(180,180,180,0.6)' }}>・持っていなかった → 宣言した側が影響力-1、アクション失敗</p>
+                      <p><span style={{ color: '#93c5fd' }}>ブロック</span> — 対応するキャラを主張してアクションを妨害。ブロック自体もチャレンジできる。</p>
+                    </div>
+                  </div>
+                  <div className="rounded p-3" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(120,53,15,0.3)' }}>
+                    <p className="font-semibold" style={{ color: 'rgba(255,255,255,0.75)' }}>脱落と勝利</p>
+                    <p className="mt-1">カードを2枚とも公開させられたプレイヤーは脱落。<span style={{ color: '#fbbf24' }}>最後に残った1人が勝利。</span></p>
+                  </div>
+                </div>
+              </section>
+
               <section>
                 <h3 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'rgba(180,83,9,0.6)' }}>一般アクション（常に使用可）</h3>
                 <div className="space-y-1">
@@ -417,7 +446,7 @@ function HomeInner() {
                     { char: '将軍', bg: 'rgba(88,28,135,0.4)', border: 'rgba(147,51,234,0.4)', symbol: '★', action: '徴収', cost: '', effect: '財務省から 3コイン取る', block: '—' },
                     { char: '刺客', bg: 'rgba(30,27,30,0.5)', border: 'rgba(113,113,122,0.4)', symbol: '☠', action: '暗殺', cost: '3◆', effect: '対象の影響力1つを除去', block: '女王（対象のみ）' },
                     { char: '海賊', bg: 'rgba(30,58,138,0.4)', border: 'rgba(59,130,246,0.4)', symbol: '⚓', action: '強奪', cost: '', effect: '対象から 2コイン盗む（1枚以下なら全部）', block: '忍者 / 海賊（対象のみ）' },
-                    { char: '忍者', bg: 'rgba(120,53,15,0.35)', border: 'rgba(245,158,11,0.45)', symbol: '✦', action: '探索', cost: '', effect: 'Court山から2枚引いて、手札と好きに交換し2枚返す', block: '—' },
+                    { char: '忍者', bg: 'rgba(120,53,15,0.35)', border: 'rgba(245,158,11,0.45)', symbol: '✦', action: '探索', cost: '', effect: '山札から2枚引いて、手札と好きに交換し余った2枚を戻す', block: '—' },
                   ].map(a => (
                     <div key={a.char} className="rounded px-3 py-2" style={{ background: a.bg, border: `1px solid ${a.border}` }}>
                       <div className="flex items-center gap-2 mb-1">
