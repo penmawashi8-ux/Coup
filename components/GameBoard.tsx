@@ -89,7 +89,7 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
   const [lobbyCpuCount, setLobbyCpuCount] = useState(0);
   const logRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const prevLogLenRef = useRef(initialState.log.length);
+  const prevLogRef = useRef<string[]>([...initialState.log]);
   const tickerQueueRef = useRef<string[]>([]);
   const tickerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipElimRef = useRef(false); // set true when player presses skip after elimination
@@ -174,8 +174,24 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
   // Queue new log entries for the ticker; keep displayed cards in sync
   useEffect(() => {
     latestPlayersRef.current = state.players;
-    const newEntries = state.log.slice(prevLogLenRef.current);
-    prevLogLenRef.current = state.log.length;
+    const prevLog = prevLogRef.current;
+    const curLog = state.log;
+    prevLogRef.current = [...curLog];
+    let newEntries: string[];
+    if (prevLog.length === 0) {
+      newEntries = [...curLog];
+    } else if (curLog.length > prevLog.length) {
+      newEntries = curLog.slice(prevLog.length);
+    } else {
+      // Log hit the cap (same or shorter length): find new entries by locating
+      // where the previous tail ends in the current log
+      const prevLast = prevLog[prevLog.length - 1];
+      let lastMatchIdx = -1;
+      for (let i = curLog.length - 1; i >= 0; i--) {
+        if (curLog[i] === prevLast) { lastMatchIdx = i; break; }
+      }
+      newEntries = lastMatchIdx >= 0 ? curLog.slice(lastMatchIdx + 1) : [];
+    }
     if (newEntries.length === 0) {
       // No new log entries — update displayed cards immediately (e.g. lobby / init)
       setDisplayedPlayers(state.players);

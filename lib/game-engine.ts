@@ -115,7 +115,7 @@ export function canBeBlockedBy(action: ActionType, playerId: string, targetId: s
 }
 
 function addLog(state: GameState, msg: string): void {
-  state.log = [...state.log.slice(-49), msg];
+  state.log = [...state.log.slice(-499), msg];
   state.lastUpdated = Date.now();
 }
 
