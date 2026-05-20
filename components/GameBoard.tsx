@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import type { GameState, ActionType, Character } from '@/lib/types';
 import CardDisplay from './CardDisplay';
 import { sounds } from '@/lib/sounds';
@@ -171,8 +171,8 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
     }
   }, [state.log]);
 
-  // Queue new log entries for the ticker; keep displayed cards in sync
-  useEffect(() => {
+  // useLayoutEffect: fires before paint so tickerActive is true before game-over screen can render
+  useLayoutEffect(() => {
     latestPlayersRef.current = state.players;
     const prevLog = prevLogRef.current;
     const curLog = state.log;
