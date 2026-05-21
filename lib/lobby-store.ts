@@ -1,10 +1,6 @@
 // Lobby store: tracks open (waiting) rooms so players can discover games.
 // Uses a single index blob (coup-lobby-index.json) in production,
 // and an in-memory Map for local dev.
-//
-// The single-file approach avoids relying on list() for discovery —
-// list() can have eventual-consistency delays in Vercel Blob.
-// We use allowOverwrite:true so repeated writes always succeed in v2.x.
 
 import type { LobbyEntry } from './types';
 
@@ -25,14 +21,37 @@ function useBlob(): boolean {
   return !!process.env.BLOB_READ_WRITE_TOKEN;
 }
 
+function blobToken(): string {
+  return process.env.BLOB_READ_WRITE_TOKEN ?? '';
+}
+
+function authHeaders(): Record<string, string> {
+  return { Authorization: `Bearer ${blobToken()}` };
+}
+
 function memRooms(): Map<string, LobbyEntry> {
   if (!global.__lobbyRooms) global.__lobbyRooms = new Map();
   return global.__lobbyRooms;
 }
 
+// Derive private blob base URL from token (same pattern as store.ts).
+function deriveBlobBaseUrl(): string | null {
+  if (global.__blobBaseUrl) return global.__blobBaseUrl;
+  const token = blobToken();
+  if (!token) return null;
+  const m = token.match(/^vercel_blob_rw_([A-Za-z0-9]+)_/);
+  if (!m) return null;
+  const url = `https://${m[1]}.blob.vercel-storage.com`;
+  global.__blobBaseUrl = url;
+  return url;
+}
+
 async function tryFetchIndex(url: string): Promise<LobbyEntry[] | null> {
   try {
-    const res = await fetch(`${url}?_=${Date.now()}`, { cache: 'no-store' });
+    const res = await fetch(`${url}?_=${Date.now()}`, {
+      cache: 'no-store',
+      headers: authHeaders(),
+    });
     if (!res.ok) return null;
     const data = await res.json() as { rooms: LobbyEntry[] };
     return Array.isArray(data.rooms) ? data.rooms : [];
@@ -49,16 +68,9 @@ async function readIndex(): Promise<LobbyEntry[]> {
   }
 
   // 2. Derive URL from blob base URL — works without any prior API call
-  //    __blobBaseUrl is set by store.ts after any setRoom, OR derived from the token here
-  if (!global.__blobBaseUrl) {
-    const token = process.env.BLOB_READ_WRITE_TOKEN;
-    if (token) {
-      const m = token.match(/^vercel_blob_rw_([A-Za-z0-9]+)_/);
-      if (m) global.__blobBaseUrl = `https://${m[1]}.public.blob.vercel-storage.com`;
-    }
-  }
-  if (global.__blobBaseUrl) {
-    const url = `${global.__blobBaseUrl}/${INDEX_PATH}`;
+  const baseUrl = deriveBlobBaseUrl();
+  if (baseUrl) {
+    const url = `${baseUrl}/${INDEX_PATH}`;
     const rooms = await tryFetchIndex(url);
     if (rooms !== null) {
       global.__lobbyIndexUrl = url;
@@ -66,7 +78,7 @@ async function readIndex(): Promise<LobbyEntry[]> {
     }
   }
 
-  // 3. Cold-start fallback: discover via list() (only needed on fresh instances with no prior writes)
+  // 3. Cold-start fallback: discover via list()
   const { list } = await import('@vercel/blob');
   try {
     const { blobs } = await list({ prefix: INDEX_PATH, limit: 1 });
@@ -81,11 +93,13 @@ async function readIndex(): Promise<LobbyEntry[]> {
 
 async function writeIndex(rooms: LobbyEntry[]): Promise<void> {
   const { put } = await import('@vercel/blob');
-  // allowOverwrite:true is required in @vercel/blob v2.x when overwriting an existing blob
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const opts: any = { access: 'public', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json' };
+  const opts: any = { access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json' };
   const result = await put(INDEX_PATH, JSON.stringify({ rooms }), opts);
   global.__lobbyIndexUrl = result.url;
+  if (!global.__blobBaseUrl) {
+    global.__blobBaseUrl = result.url.replace(`/${INDEX_PATH}`, '');
+  }
 }
 
 export async function getLobbyList(): Promise<LobbyEntry[]> {
@@ -114,7 +128,6 @@ export async function addLobbyEntry(entry: LobbyEntry): Promise<void> {
     return;
   }
   const cutoff = Date.now() - ROOM_TTL_MS;
-  // Read → filter expired → add new entry → write
   const existing = await readIndex();
   const filtered = existing.filter(r => r.createdAt > cutoff && r.id !== entry.id);
   await writeIndex([...filtered, entry]);

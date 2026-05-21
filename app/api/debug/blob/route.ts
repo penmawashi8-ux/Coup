@@ -12,7 +12,7 @@ export async function GET() {
 
   // Derive base URL the same way store.ts / lobby-store.ts do
   const m = token.match(/^vercel_blob_rw_([A-Za-z0-9]+)_/);
-  result.derivedBaseUrl = m ? `https://${m[1]}.public.blob.vercel-storage.com` : null;
+  result.derivedBaseUrl = m ? `https://${m[1]}.blob.vercel-storage.com` : null;
 
   if (!hasToken) {
     return NextResponse.json({ ...result, error: 'BLOB_READ_WRITE_TOKEN not set — using in-memory only' });
@@ -21,19 +21,20 @@ export async function GET() {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { put, list, del } = await import('@vercel/blob') as any;
+    const authHeader = { Authorization: `Bearer ${token}` };
 
     // ── 1. Basic write/read/delete cycle ──
     const testKey = `coup-debug-test-${Date.now()}.json`;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const putResult = await put(testKey, JSON.stringify({ ok: true, ts: Date.now() }), {
-      access: 'public',
+      access: 'private',
       addRandomSuffix: false,
       allowOverwrite: true,
       contentType: 'application/json',
     });
     result.putUrl = putResult.url;
 
-    const fetchRes = await fetch(`${putResult.url}?_=${Date.now()}`, { cache: 'no-store' });
+    const fetchRes = await fetch(`${putResult.url}?_=${Date.now()}`, { cache: 'no-store', headers: authHeader });
     result.fetchStatus = fetchRes.status;
     result.fetchOk = fetchRes.ok;
     if (fetchRes.ok) result.fetchBody = await fetchRes.json();
@@ -58,7 +59,7 @@ export async function GET() {
       const indexPut = await put(
         INDEX_PATH,
         JSON.stringify({ rooms: [testEntry] }),
-        { access: 'public', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json' },
+        { access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json' },
       );
       indexWriteUrl = indexPut.url;
       result.indexWriteUrl = indexWriteUrl;
@@ -73,7 +74,7 @@ export async function GET() {
     let indexReadRooms: unknown = null;
     if (indexWriteUrl) {
       try {
-        const readRes = await fetch(`${indexWriteUrl}?_=${Date.now()}`, { cache: 'no-store' });
+        const readRes = await fetch(`${indexWriteUrl}?_=${Date.now()}`, { cache: 'no-store', headers: authHeader });
         result.indexReadStatus = readRes.status;
         if (readRes.ok) {
           const body = await readRes.json() as { rooms: unknown };
@@ -90,7 +91,7 @@ export async function GET() {
     if (result.derivedBaseUrl) {
       const derivedUrl = `${result.derivedBaseUrl}/${INDEX_PATH}?_=${Date.now()}`;
       try {
-        const derivedRes = await fetch(derivedUrl, { cache: 'no-store' });
+        const derivedRes = await fetch(derivedUrl, { cache: 'no-store', headers: authHeader });
         result.derivedFetchStatus = derivedRes.status;
         result.derivedFetchOk = derivedRes.ok;
         if (derivedRes.ok) result.derivedFetchBody = await derivedRes.json();
