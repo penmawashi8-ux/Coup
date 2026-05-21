@@ -23,25 +23,38 @@ function blobPath(id: string): string {
   return `coup-room-${id}.json`;
 }
 
-// Vercel Blob token format: vercel_blob_rw_{storeId}_{...}
-// Derive the public CDN base URL directly from the token — no API call needed.
+function blobToken(): string {
+  return process.env.BLOB_READ_WRITE_TOKEN ?? '';
+}
+
+// Derive blob base URL from token.
+// Private stores: https://{storeId}.blob.vercel-storage.com
+// Public stores:  https://{storeId}.public.blob.vercel-storage.com
+// We try private first; fall back to public if the store allows it.
 function deriveBaseUrl(): string | null {
   if (global.__blobBaseUrl) return global.__blobBaseUrl;
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  const token = blobToken();
   if (!token) return null;
   const m = token.match(/^vercel_blob_rw_([A-Za-z0-9]+)_/);
   if (!m) return null;
-  const url = `https://${m[1]}.public.blob.vercel-storage.com`;
+  // Use non-public URL; we authenticate with the token on every fetch.
+  const url = `https://${m[1]}.blob.vercel-storage.com`;
   global.__blobBaseUrl = url;
   return url;
 }
 
+function authHeaders(): Record<string, string> {
+  return { Authorization: `Bearer ${blobToken()}` };
+}
+
 async function blobGet(id: string): Promise<GameState | null> {
   try {
-    // Primary: construct URL directly from token (no list() needed)
     const baseUrl = deriveBaseUrl();
     if (baseUrl) {
-      const res = await fetch(`${baseUrl}/${blobPath(id)}?_=${Date.now()}`, { cache: 'no-store' });
+      const res = await fetch(`${baseUrl}/${blobPath(id)}?_=${Date.now()}`, {
+        cache: 'no-store',
+        headers: authHeaders(),
+      });
       if (res.ok) return res.json() as Promise<GameState>;
       if (res.status === 404) return null;
     }
@@ -49,8 +62,12 @@ async function blobGet(id: string): Promise<GameState | null> {
     const { list } = await import('@vercel/blob');
     const { blobs } = await list({ prefix: blobPath(id) });
     if (blobs.length === 0) return null;
+    // Cache the real base URL from the list result URL
     global.__blobBaseUrl = blobs[0].url.replace(`/${blobPath(id)}`, '');
-    const res = await fetch(`${blobs[0].url}?_=${Date.now()}`, { cache: 'no-store' });
+    const res = await fetch(`${blobs[0].url}?_=${Date.now()}`, {
+      cache: 'no-store',
+      headers: authHeaders(),
+    });
     if (!res.ok) return null;
     return res.json() as Promise<GameState>;
   } catch {
@@ -61,7 +78,7 @@ async function blobGet(id: string): Promise<GameState | null> {
 async function blobSet(id: string, state: GameState): Promise<void> {
   const { put } = await import('@vercel/blob');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const opts: any = { access: 'public', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json' };
+  const opts: any = { access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json' };
   const result = await put(blobPath(id), JSON.stringify(state), opts);
   if (!global.__blobBaseUrl) {
     global.__blobBaseUrl = result.url.replace(`/${blobPath(id)}`, '');
@@ -93,7 +110,6 @@ export async function setRoom(id: string, state: GameState): Promise<void> {
     try {
       await blobSet(id, state);
     } catch (e) {
-      // Blob write failed — in-memory cache still holds state for this instance
       console.error('[store] blob write failed:', e);
     }
   }
