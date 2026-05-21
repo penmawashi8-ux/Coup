@@ -87,6 +87,7 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
   const [eventOverlay, setEventOverlay] = useState<{ text: string; kind: 'success' | 'fail' | 'elim' | 'victory' | 'neutral' } | null>(null);
   const [showSummary, setShowSummary] = useState(false);
   const [lobbyCpuCount, setLobbyCpuCount] = useState(0);
+  const [elapsedSec, setElapsedSec] = useState(0);
   const logRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const prevLogRef = useRef<string[]>([...initialState.log]);
@@ -96,6 +97,9 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
   const [skipRequested, setSkipRequested] = useState(false);
   const [elimSkipReady, setElimSkipReady] = useState(false); // delayed to prevent accidental tap
   const myNameRef = useRef(''); // tracked via ref so drainTickerQueue can read latest value
+  const autoSkipSentRef = useRef(false);
+  const prevWaitingForIdRef = useRef<string | null>(null);
+  const sendActionRef = useRef<(body: Record<string, unknown>) => Promise<void>>(() => Promise.resolve());
 
   function drainTickerQueue() {
     const next = tickerQueueRef.current.shift();
@@ -109,10 +113,14 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
       return;
     }
 
+    // Action declarations, challenges, and blocks always get a popup overlay
+    const isActionDecl = /を宣言|チャレンジ！|ブロック！/.test(next);
+
     // Events mentioning the player directly, or known high-impact keywords → big event
     const isBigEvent =
       next.startsWith('✅') || next.startsWith('❌') ||
       /脱落|勝利|暗殺|クーデター|影響力-1/.test(next) ||
+      isActionDecl ||
       (myNameRef.current !== '' && next.includes(myNameRef.current));
 
     // If player pressed "skip after elimination", fast-forward routine events.
@@ -127,10 +135,10 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
         next.startsWith('✅') ? 'success'
         : next.startsWith('❌') ? 'fail'
         : /勝利/.test(next) ? 'victory'
-        : /脱落|クーデター|暗殺/.test(next) ? 'elim'
+        : (/脱落|クーデター|暗殺/.test(next) && !isActionDecl) ? 'elim'
         : 'neutral';
       setEventOverlay({ text: next, kind });
-      const delay = /勝利/.test(next) ? 4500 : /脱落/.test(next) ? 5000 : 3200;
+      const delay = /勝利/.test(next) ? 4500 : /脱落/.test(next) ? 5000 : kind === 'neutral' ? 2000 : 3200;
       tickerTimerRef.current = setTimeout(drainTickerQueue, delay);
     } else {
       setEventOverlay(null);
@@ -262,6 +270,8 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
       setError('Network error');
     }
   }
+  // Keep ref current so auto-skip effect can call sendAction without stale closures
+  sendActionRef.current = sendAction;
 
   function handleDeclareAction() {
     if (!selectedAction) return;
@@ -348,10 +358,41 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
     }
     return null;
   })();
-  const elapsedSec = Math.floor((Date.now() - state.lastUpdated) / 1000);
+  // Reset auto-skip flag whenever the player we're waiting for changes
+  if (prevWaitingForIdRef.current !== waitingForId) {
+    prevWaitingForIdRef.current = waitingForId;
+    autoSkipSentRef.current = false;
+  }
+
+  const skipTimeoutSec = state.skipTimeoutSec ?? 0; // 0 = ∞ (no auto-skip)
   const canSkip = isOnline && !!waitingForId && (
-    (state.hostId === playerId && elapsedSec >= 30) || elapsedSec >= 90
+    skipTimeoutSec > 0
+      ? elapsedSec >= Math.ceil(skipTimeoutSec / 2)
+      : ((state.hostId === playerId && elapsedSec >= 30) || elapsedSec >= 90)
   );
+
+  // Update elapsedSec every second while waiting; reset when not waiting
+  useEffect(() => {
+    if (!isOnline || !waitingForId) {
+      setElapsedSec(0);
+      return;
+    }
+    const update = () => setElapsedSec(Math.floor((Date.now() - state.lastUpdated) / 1000));
+    update();
+    const t = setInterval(update, 1000);
+    return () => clearInterval(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOnline, waitingForId, state.lastUpdated]);
+
+  // Auto-skip when countdown expires
+  useEffect(() => {
+    if (!isOnline || !waitingForId || skipTimeoutSec === 0) return;
+    if (elapsedSec >= skipTimeoutSec && !autoSkipSentRef.current) {
+      autoSkipSentRef.current = true;
+      sendActionRef.current({ type: 'skip_player', playerId, targetPlayerId: waitingForId });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [elapsedSec, waitingForId, skipTimeoutSec, isOnline]);
 
   // Determine what UI to show
   const myReaction = pa ? pa.reactions[playerId] : undefined;
@@ -1045,19 +1086,28 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
             {state.phase === 'exchange_select' && !isExchangePlayer && (
               <p className="text-sm" style={{ color: 'rgba(180,83,9,0.55)' }}>忍者 が探索を選んでいます...</p>
             )}
-            {/* Disconnection skip button */}
+            {/* AFK countdown / skip button */}
             {waitingForId && isOnline && (
-              <div className="mt-2 text-center">
+              <div className="mt-2 text-center space-y-1">
                 <p className="text-xs" style={{ color: 'rgba(75,85,99,0.8)' }}>
-                  {state.players.find(p => p.id === waitingForId)?.name} を待っています ({elapsedSec}秒)
+                  {state.players.find(p => p.id === waitingForId)?.name} を待っています
                 </p>
+                {skipTimeoutSec > 0 ? (
+                  <p className="text-xs font-semibold" style={{
+                    color: elapsedSec >= skipTimeoutSec * 0.7 ? '#ef4444' : 'rgba(245,158,11,0.7)',
+                  }}>
+                    残り {Math.max(0, skipTimeoutSec - elapsedSec)}秒で自動スキップ
+                  </p>
+                ) : (
+                  <p className="text-xs" style={{ color: 'rgba(75,85,99,0.7)' }}>{elapsedSec}秒経過</p>
+                )}
                 {canSkip && (
                   <button
                     onClick={() => sendAction({ type: 'skip_player', playerId, targetPlayerId: waitingForId })}
-                    className="mt-1 text-xs px-2 py-1 rounded transition-colors"
+                    className="text-xs px-2 py-1 rounded transition-colors"
                     style={{ border: '1px solid rgba(185,28,28,0.5)', color: '#fca5a5' }}
                   >
-                    切断? スキップする
+                    今すぐスキップ
                   </button>
                 )}
               </div>

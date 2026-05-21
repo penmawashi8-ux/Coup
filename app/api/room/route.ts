@@ -6,11 +6,12 @@ import { addLobbyEntry } from '@/lib/lobby-store';
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { playerName, cpuCount = 0, mode = 'online', password } = body as {
+  const { playerName, cpuCount = 0, mode = 'online', password, skipTimeoutSec } = body as {
     playerName: string;
     cpuCount?: number;
     mode?: 'cpu' | 'online';
     password?: string;
+    skipTimeoutSec?: number;
   };
 
   const roomId = uuidv4().slice(0, 6).toUpperCase();
@@ -31,6 +32,7 @@ export async function POST(req: Request) {
     const trimmedPw = password?.trim();
     if (trimmedPw) state.password = trimmedPw;
     state.isPublic = true;
+    if (skipTimeoutSec && skipTimeoutSec > 0) state.skipTimeoutSec = skipTimeoutSec;
 
     let lobbyError: string | null = null;
     try {

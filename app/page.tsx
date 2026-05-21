@@ -5,8 +5,12 @@ import { Suspense } from 'react';
 import CoupHeroImage from '@/components/CoupHeroImage';
 
 const RANDOM_NAMES = [
-  'スパイ', '詐欺師', '公爵', '暗殺者', '船長', '大使', '伯爵', '革命家',
+  'スパイ', '詐欺師', '公爵', '大使', '伯爵', '革命家',
   '策略家', '陰謀家', 'ブラフ王', '影の支配者', '謀略家', '権力者',
+  '怪盗', '錬金術師', '道化師', '占い師', '賭博師',
+  '傭兵', '外交官', '黒幕', '影武者', '商人',
+  '幻術師', '賢者', '情報屋', '密売人', '監察官',
+  '金融家', '貴族', '議員', '密偵',
 ];
 
 function randomName() {
@@ -108,6 +112,7 @@ function HomeInner() {
   const [roomPassword, setRoomPassword] = useState('');
   const [name, setName] = useState('');
   const [totalPlayers, setTotalPlayers] = useState(2);
+  const [skipTimeoutSec, setSkipTimeoutSec] = useState(60);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -142,6 +147,7 @@ function HomeInner() {
       playerName: resolvedName(),
       mode: 'online',
       password: roomPassword.trim() || undefined,
+      skipTimeoutSec: skipTimeoutSec > 0 ? skipTimeoutSec : undefined,
     });
     setLoading(false);
     if (!ok) { setError(data.error ?? 'エラーが発生しました'); return; }
@@ -318,6 +324,26 @@ function HomeInner() {
               />
               <p className="text-xs mt-1" style={{ color: 'rgba(120,53,15,0.6)' }}>
                 設定するとロビーで 🔒 が表示されます
+              </p>
+            </div>
+            <div>
+              <label className="block mb-2 text-xs" style={{ color: 'rgba(217,180,120,0.6)' }}>放置スキップ時間</label>
+              <div className="grid grid-cols-4 gap-2">
+                {([15, 30, 60, 0] as const).map(sec => (
+                  <button
+                    key={sec}
+                    onClick={() => setSkipTimeoutSec(sec)}
+                    className="py-2.5 rounded text-sm font-bold transition-colors"
+                    style={skipTimeoutSec === sec
+                      ? { background: '#d97706', color: '#000' }
+                      : { background: 'rgba(0,0,0,0.4)', color: 'rgba(217,180,120,0.6)', border: '1px solid rgba(120,53,15,0.4)' }}
+                  >
+                    {sec === 0 ? '∞' : `${sec}秒`}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs mt-1" style={{ color: 'rgba(120,53,15,0.6)' }}>
+                {skipTimeoutSec > 0 ? `無操作が${skipTimeoutSec}秒続くと自動でターンをスキップ` : 'スキップなし（手動のみ）'}
               </p>
             </div>
             {error && <p className="text-sm" style={{ color: '#f87171' }}>{error}</p>}
