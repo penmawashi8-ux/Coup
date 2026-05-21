@@ -38,11 +38,24 @@ export async function getLobbyList(): Promise<LobbyEntry[]> {
 
   const { list } = await import('@vercel/blob');
   try {
-    const { blobs } = await list({ prefix: LOBBY_PREFIX });
+    // Collect all blobs across pages (handles pagination)
+    const allBlobs: Awaited<ReturnType<typeof list>>['blobs'] = [];
+    let cursor: string | undefined = undefined;
+    for (;;) {
+      const result = await list({ prefix: LOBBY_PREFIX, limit: 1000, ...(cursor ? { cursor } : {}) });
+      allBlobs.push(...result.blobs);
+      if (!result.hasMore || !result.cursor) break;
+      cursor = result.cursor;
+    }
+
     const entries = await Promise.all(
-      blobs.map(async (blob) => {
+      allBlobs.map(async (blob) => {
         try {
-          const res = await fetch(blob.downloadUrl, { cache: 'no-store' });
+          // Use blob.url (CDN) with cache-busting to ensure fresh content
+          const res = await fetch(`${blob.url}?_=${Date.now()}`, {
+            cache: 'no-store',
+            headers: { 'Cache-Control': 'no-cache' },
+          });
           if (!res.ok) return null;
           return await res.json() as LobbyEntry;
         } catch {

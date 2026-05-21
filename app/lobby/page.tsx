@@ -46,7 +46,7 @@ function LobbyInner() {
 
   const fetchRooms = useCallback(async () => {
     try {
-      const res = await fetch('/api/lobby');
+      const res = await fetch('/api/lobby', { cache: 'no-store' });
       if (res.ok) setRooms(await res.json());
     } catch { /* silent */ } finally {
       setLoadingList(false);
