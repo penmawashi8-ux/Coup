@@ -12,7 +12,7 @@ export async function GET() {
 
   // Derive base URL the same way store.ts / lobby-store.ts do
   const m = token.match(/^vercel_blob_rw_([A-Za-z0-9]+)_/);
-  result.derivedBaseUrl = m ? `https://${m[1]}.blob.vercel-storage.com` : null;
+  result.derivedBaseUrl = m ? `https://${m[1]}.public.blob.vercel-storage.com` : null;
 
   if (!hasToken) {
     return NextResponse.json({ ...result, error: 'BLOB_READ_WRITE_TOKEN not set — using in-memory only' });
