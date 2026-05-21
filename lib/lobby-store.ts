@@ -41,7 +41,8 @@ function deriveBlobBaseUrl(): string | null {
   if (!token) return null;
   const m = token.match(/^vercel_blob_rw_([A-Za-z0-9]+)_/);
   if (!m) return null;
-  const url = `https://${m[1]}.blob.vercel-storage.com`;
+  // Private store blobs still use the .public. CDN hostname; auth is enforced via the token.
+  const url = `https://${m[1]}.public.blob.vercel-storage.com`;
   global.__blobBaseUrl = url;
   return url;
 }

@@ -37,8 +37,8 @@ function deriveBaseUrl(): string | null {
   if (!token) return null;
   const m = token.match(/^vercel_blob_rw_([A-Za-z0-9]+)_/);
   if (!m) return null;
-  // Use non-public URL; we authenticate with the token on every fetch.
-  const url = `https://${m[1]}.blob.vercel-storage.com`;
+  // Private store blobs still use the .public. CDN hostname; auth is enforced via the token.
+  const url = `https://${m[1]}.public.blob.vercel-storage.com`;
   global.__blobBaseUrl = url;
   return url;
 }
@@ -56,7 +56,7 @@ async function blobGet(id: string): Promise<GameState | null> {
         headers: authHeaders(),
       });
       if (res.ok) return res.json() as Promise<GameState>;
-      if (res.status === 404) return null;
+      // Don't short-circuit on 404 — fall through to list() in case the derived URL is stale/wrong
     }
     // Fallback: discover via list() for non-standard token formats
     const { list } = await import('@vercel/blob');
