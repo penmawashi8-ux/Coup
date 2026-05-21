@@ -23,18 +23,34 @@ function blobPath(id: string): string {
   return `coup-room-${id}.json`;
 }
 
+// Vercel Blob token format: vercel_blob_rw_{storeId}_{...}
+// Derive the public CDN base URL directly from the token — no API call needed.
+function deriveBaseUrl(): string | null {
+  if (global.__blobBaseUrl) return global.__blobBaseUrl;
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  if (!token) return null;
+  const m = token.match(/^vercel_blob_rw_([A-Za-z0-9]+)_/);
+  if (!m) return null;
+  const url = `https://${m[1]}.public.blob.vercel-storage.com`;
+  global.__blobBaseUrl = url;
+  return url;
+}
+
 async function blobGet(id: string): Promise<GameState | null> {
-  const { list } = await import('@vercel/blob');
   try {
-    // Use cached base URL for direct fetch (faster)
-    if (global.__blobBaseUrl) {
-      const res = await fetch(`${global.__blobBaseUrl}/${blobPath(id)}`, { cache: 'no-store' });
+    // Primary: construct URL directly from token (no list() needed)
+    const baseUrl = deriveBaseUrl();
+    if (baseUrl) {
+      const res = await fetch(`${baseUrl}/${blobPath(id)}?_=${Date.now()}`, { cache: 'no-store' });
       if (res.ok) return res.json() as Promise<GameState>;
+      if (res.status === 404) return null;
     }
-    // Fall back to listing blobs
+    // Fallback: discover via list() for non-standard token formats
+    const { list } = await import('@vercel/blob');
     const { blobs } = await list({ prefix: blobPath(id) });
     if (blobs.length === 0) return null;
-    const res = await fetch(blobs[0].downloadUrl, { cache: 'no-store' });
+    global.__blobBaseUrl = blobs[0].url.replace(`/${blobPath(id)}`, '');
+    const res = await fetch(`${blobs[0].url}?_=${Date.now()}`, { cache: 'no-store' });
     if (!res.ok) return null;
     return res.json() as Promise<GameState>;
   } catch {
@@ -44,12 +60,9 @@ async function blobGet(id: string): Promise<GameState | null> {
 
 async function blobSet(id: string, state: GameState): Promise<void> {
   const { put } = await import('@vercel/blob');
-  const result = await put(blobPath(id), JSON.stringify(state), {
-    access: 'public',
-    addRandomSuffix: false,
-    contentType: 'application/json',
-  });
-  // Cache the base URL for faster reads
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const opts: any = { access: 'public', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json' };
+  const result = await put(blobPath(id), JSON.stringify(state), opts);
   if (!global.__blobBaseUrl) {
     global.__blobBaseUrl = result.url.replace(`/${blobPath(id)}`, '');
   }
