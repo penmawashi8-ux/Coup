@@ -74,6 +74,16 @@ export interface GameState {
   createdAt: number;
   lastUpdated: number;
   hostId: string;
+  password?: string;
+  isPublic?: boolean;
+}
+
+export interface LobbyEntry {
+  id: string;
+  hostName: string;
+  playerCount: number;
+  hasPassword: boolean;
+  createdAt: number;
 }
 
 export interface GameRoom {
