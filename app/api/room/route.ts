@@ -32,13 +32,17 @@ export async function POST(req: Request) {
     if (trimmedPw) state.password = trimmedPw;
     state.isPublic = true;
 
-    await addLobbyEntry({
-      id: roomId,
-      hostName: playerName,
-      playerCount: 1,
-      hasPassword: !!trimmedPw,
-      createdAt: Date.now(),
-    });
+    try {
+      await addLobbyEntry({
+        id: roomId,
+        hostName: playerName,
+        playerCount: 1,
+        hasPassword: !!trimmedPw,
+        createdAt: Date.now(),
+      });
+    } catch (e) {
+      console.error('[lobby] addLobbyEntry failed:', e);
+    }
   }
 
   await setRoom(roomId, state);

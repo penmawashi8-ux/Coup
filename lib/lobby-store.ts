@@ -45,12 +45,17 @@ async function blobRead(): Promise<LobbyEntry[]> {
 
 async function blobWrite(rooms: LobbyEntry[]): Promise<void> {
   const { put } = await import('@vercel/blob');
-  const result = await put(INDEX_PATH, JSON.stringify({ rooms }), {
-    access: 'public',
-    addRandomSuffix: false,
-    contentType: 'application/json',
-  });
-  global.__lobbyBlobUrl = result.url;
+  try {
+    const result = await put(INDEX_PATH, JSON.stringify({ rooms }), {
+      access: 'public',
+      addRandomSuffix: false,
+      contentType: 'application/json',
+    });
+    global.__lobbyBlobUrl = result.url;
+  } catch (e) {
+    console.error('[lobby-store] blobWrite failed:', e);
+    throw e;
+  }
 }
 
 export async function getLobbyList(): Promise<LobbyEntry[]> {
