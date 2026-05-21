@@ -48,7 +48,15 @@ async function readIndex(): Promise<LobbyEntry[]> {
     if (rooms !== null) return rooms;
   }
 
-  // 2. Derive URL from game-store base URL (shared global, set after any setRoom call)
+  // 2. Derive URL from blob base URL — works without any prior API call
+  //    __blobBaseUrl is set by store.ts after any setRoom, OR derived from the token here
+  if (!global.__blobBaseUrl) {
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    if (token) {
+      const m = token.match(/^vercel_blob_rw_([A-Za-z0-9]+)_/);
+      if (m) global.__blobBaseUrl = `https://${m[1]}.public.blob.vercel-storage.com`;
+    }
+  }
   if (global.__blobBaseUrl) {
     const url = `${global.__blobBaseUrl}/${INDEX_PATH}`;
     const rooms = await tryFetchIndex(url);
