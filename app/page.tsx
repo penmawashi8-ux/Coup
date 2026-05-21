@@ -145,6 +145,13 @@ function HomeInner() {
     });
     setLoading(false);
     if (!ok) { setError(data.error ?? 'エラーが発生しました'); return; }
+    if (data.lobbyError) {
+      // Show error for diagnostics, but still allow entering the room
+      setError(`[診断] ロビー登録失敗: ${data.lobbyError}`);
+      // Navigate anyway after a short delay so error is visible
+      setTimeout(() => router.push(`/r/${data.roomId}?pid=${data.playerId}&online=1`), 4000);
+      return;
+    }
     router.push(`/r/${data.roomId}?pid=${data.playerId}&online=1`);
   }
 
