@@ -76,6 +76,7 @@ export interface GameState {
   hostId: string;
   password?: string;
   isPublic?: boolean;
+  skipTimeoutSec?: number;
 }
 
 export interface LobbyEntry {

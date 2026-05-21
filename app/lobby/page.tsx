@@ -5,8 +5,12 @@ import { Suspense } from 'react';
 import type { LobbyEntry } from '@/lib/types';
 
 const RANDOM_NAMES = [
-  'スパイ', '詐欺師', '公爵', '暗殺者', '船長', '大使', '伯爵', '革命家',
+  'スパイ', '詐欺師', '公爵', '大使', '伯爵', '革命家',
   '策略家', '陰謀家', 'ブラフ王', '影の支配者', '謀略家', '権力者',
+  '怪盗', '錬金術師', '道化師', '占い師', '賭博師',
+  '傭兵', '外交官', '黒幕', '影武者', '商人',
+  '幻術師', '賢者', '情報屋', '密売人', '監察官',
+  '金融家', '貴族', '議員', '密偵',
 ];
 function randomName() {
   return RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)];
