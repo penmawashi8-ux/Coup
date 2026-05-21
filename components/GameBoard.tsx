@@ -940,12 +940,17 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
             {state.phase === 'waiting_reactions' && !isWaitingMyReaction && (
               <div>
                 <p className="text-sm" style={{ color: 'rgba(180,83,9,0.55)' }}>他プレイヤーの反応を待っています...</p>
-                {pa && (
-                  <p className="text-xs mt-1" style={{ color: 'rgba(120,53,15,0.7)' }}>
-                    {ACTION_LABELS[pa.type]}
-                    {pa.targetId ? ` → ${state.players.find(p => p.id === pa.targetId)?.name}` : ''}
-                  </p>
-                )}
+                {pa && (() => {
+                  const pendingNames = Object.entries(pa.reactions)
+                    .filter(([, r]) => r === null)
+                    .map(([id]) => state.players.find(p => p.id === id)?.name ?? id)
+                    .join('、');
+                  return (
+                    <p className="text-xs mt-1" style={{ color: 'rgba(245,158,11,0.7)' }}>
+                      待機中: {pendingNames || '（なし）'}
+                    </p>
+                  );
+                })()}
               </div>
             )}
 

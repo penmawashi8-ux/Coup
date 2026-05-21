@@ -178,6 +178,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         }
         const started = createGame(playerDefs, state.hostId);
         started.id = state.id;
+        started.isPublic = state.isPublic; // preserve so lobby entry is removed
         state = processCPUTurns(started);
         if (state.isPublic) {
           try { await removeLobbyEntry(id); } catch { /* non-critical */ }
