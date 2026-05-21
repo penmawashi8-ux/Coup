@@ -32,6 +32,7 @@ export async function POST(req: Request) {
     if (trimmedPw) state.password = trimmedPw;
     state.isPublic = true;
 
+    let lobbyError: string | null = null;
     try {
       await addLobbyEntry({
         id: roomId,
@@ -41,8 +42,12 @@ export async function POST(req: Request) {
         createdAt: Date.now(),
       });
     } catch (e) {
+      lobbyError = String(e);
       console.error('[lobby] addLobbyEntry failed:', e);
     }
+
+    await setRoom(roomId, state);
+    return NextResponse.json({ roomId, playerId: hostId, lobbyError });
   }
 
   await setRoom(roomId, state);
