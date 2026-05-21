@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { getRoom, setRoom } from '@/lib/store';
+import { removeLobbyEntry } from '@/lib/lobby-store';
 import {
   declareAction,
   submitReaction,
@@ -178,6 +179,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         const started = createGame(playerDefs, state.hostId);
         started.id = state.id;
         state = processCPUTurns(started);
+        if (state.isPublic) {
+          try { await removeLobbyEntry(id); } catch { /* non-critical */ }
+        }
         break;
       }
 

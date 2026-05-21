@@ -103,21 +103,19 @@ function MenuButton({ onClick, icon, label, sub }: {
 function HomeInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [mode, setMode] = useState<'menu' | 'cpu' | 'online_create' | 'online_join'>('menu');
+  const [mode, setMode] = useState<'menu' | 'cpu' | 'online_create'>('menu');
   const [showRules, setShowRules] = useState(false);
+  const [roomPassword, setRoomPassword] = useState('');
   const [name, setName] = useState('');
   const [totalPlayers, setTotalPlayers] = useState(2);
-  const [roomCode, setRoomCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
+    // Redirect legacy ?join= share links straight to the lobby page
     const join = searchParams.get('join');
-    if (join) {
-      setMode('online_join');
-      setRoomCode(join.toUpperCase());
-    }
-  }, [searchParams]);
+    if (join) router.push(`/lobby`);
+  }, [searchParams, router]);
 
   function resolvedName() {
     return name.trim() || randomName();
@@ -143,23 +141,11 @@ function HomeInner() {
     const { ok, data } = await apiPost('/api/room', {
       playerName: resolvedName(),
       mode: 'online',
+      password: roomPassword.trim() || undefined,
     });
     setLoading(false);
     if (!ok) { setError(data.error ?? 'エラーが発生しました'); return; }
     router.push(`/r/${data.roomId}?pid=${data.playerId}&online=1`);
-  }
-
-  async function joinOnlineRoom() {
-    if (!roomCode.trim()) { setError('ルームコードを入力してください'); return; }
-    setLoading(true);
-    setError('');
-    const code = roomCode.trim().toUpperCase();
-    const { ok, data } = await apiPost(`/api/room/${code}/join`, {
-      playerName: resolvedName(),
-    });
-    setLoading(false);
-    if (!ok) { setError(data.error ?? 'エラーが発生しました'); return; }
-    router.push(`/r/${code}?pid=${data.playerId}&online=1`);
   }
 
   const PLAYER_OPTIONS = [2, 3, 4, 5, 6];
@@ -222,10 +208,10 @@ function HomeInner() {
               sub="オンラインで他のプレイヤーと対戦"
             />
             <MenuButton
-              onClick={() => setMode('online_join')}
+              onClick={() => router.push('/lobby')}
               icon={<IconDoor />}
               label="ルームに参加"
-              sub="招待されたルームに参加する"
+              sub="参加待ちのルームを探す"
             />
             <MenuButton
               onClick={() => setShowRules(true)}
@@ -313,6 +299,20 @@ function HomeInner() {
                 style={inputStyle}
               />
             </div>
+            <div>
+              <label className="block mb-1.5 text-xs" style={{ color: 'rgba(217,180,120,0.6)' }}>パスワード（省略可）</label>
+              <input
+                value={roomPassword}
+                onChange={e => setRoomPassword(e.target.value)}
+                type="password"
+                placeholder="設定しない場合は空欄"
+                className={inputCls}
+                style={inputStyle}
+              />
+              <p className="text-xs mt-1" style={{ color: 'rgba(120,53,15,0.6)' }}>
+                設定するとロビーで 🔒 が表示されます
+              </p>
+            </div>
             {error && <p className="text-sm" style={{ color: '#f87171' }}>{error}</p>}
             <button
               onClick={createOnlineRoom}
@@ -325,43 +325,6 @@ function HomeInner() {
           </div>
         )}
 
-        {/* ── ONLINE JOIN ── */}
-        {mode === 'online_join' && (
-          <div className="w-full space-y-5 rounded p-6"
-            style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(180,83,9,0.35)' }}>
-            <button onClick={() => setMode('menu')} className="text-xs" style={{ color: 'rgba(180,83,9,0.7)' }}>← 戻る</button>
-            <h2 className="font-bold text-lg" style={{ color: '#f59e0b' }}>ルームに参加</h2>
-            <div>
-              <label className="block mb-1.5 text-xs" style={{ color: 'rgba(217,180,120,0.6)' }}>あなたの名前（空欄でランダム）</label>
-              <input
-                value={name}
-                onChange={e => setName(e.target.value)}
-                placeholder={randomName()}
-                className={inputCls}
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label className="block mb-1.5 text-xs" style={{ color: 'rgba(217,180,120,0.6)' }}>ルームコード</label>
-              <input
-                value={roomCode}
-                onChange={e => setRoomCode(e.target.value.toUpperCase())}
-                placeholder="例: A1B2C3"
-                className={`${inputCls} font-mono text-2xl tracking-widest text-center`}
-                style={inputStyle}
-              />
-            </div>
-            {error && <p className="text-sm" style={{ color: '#f87171' }}>{error}</p>}
-            <button
-              onClick={joinOnlineRoom}
-              disabled={loading}
-              className="w-full font-bold py-3 rounded transition-colors disabled:opacity-50"
-              style={{ background: 'rgba(21,128,61,0.7)', color: '#fff', border: '1px solid rgba(74,222,128,0.35)' }}
-            >
-              {loading ? '参加中...' : '参加する'}
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Rules modal */}

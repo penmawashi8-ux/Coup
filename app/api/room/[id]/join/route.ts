@@ -1,15 +1,20 @@
 import { NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { getRoom, setRoom } from '@/lib/store';
+import { updateLobbyPlayerCount } from '@/lib/lobby-store';
 import type { Player } from '@/lib/types';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { playerName } = await req.json() as { playerName: string };
+  const { playerName, password } = await req.json() as { playerName: string; password?: string };
 
   const state = await getRoom(id);
   if (!state) return NextResponse.json({ error: 'Room not found' }, { status: 404 });
   if (state.phase !== 'lobby') return NextResponse.json({ error: 'Game already started' }, { status: 400 });
+
+  if (state.password && state.password !== (password ?? '')) {
+    return NextResponse.json({ error: 'パスワードが違います' }, { status: 403 });
+  }
 
   const newPlayerId = uuidv4();
   const newPlayer: Player = {
@@ -25,6 +30,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const humanPlayers = state.players.filter(p => !p.isCPU);
   const cpuPlayers = state.players.filter(p => p.isCPU);
+  const newHumanCount = humanPlayers.length + 1;
 
   const updated = {
     ...state,
@@ -34,5 +40,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   };
 
   await setRoom(id, updated);
+
+  if (state.isPublic) {
+    try { await updateLobbyPlayerCount(id, newHumanCount); } catch { /* non-critical */ }
+  }
+
   return NextResponse.json({ playerId: newPlayerId });
 }
