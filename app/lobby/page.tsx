@@ -232,15 +232,6 @@ function LobbyInner() {
         </div>
 
         {error && <p className="text-sm text-center" style={{ color: '#f87171' }}>{error}</p>}
-
-        {/* Back to top */}
-        <button
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="w-full py-3 rounded text-sm font-semibold"
-          style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(120,53,15,0.35)', color: 'rgba(180,83,9,0.7)' }}
-        >
-          ↑ トップへ戻る
-        </button>
       </div>
 
       {/* Password modal */}
