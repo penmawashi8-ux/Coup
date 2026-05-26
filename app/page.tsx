@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import CoupHeroImage from '@/components/CoupHeroImage';
@@ -109,6 +109,8 @@ function HomeInner() {
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<'menu' | 'cpu' | 'online_create'>('menu');
   const [showRules, setShowRules] = useState(false);
+  const rulesScrollRef = useRef<HTMLDivElement>(null);
+  const [showRulesBackToTop, setShowRulesBackToTop] = useState(false);
   const [roomPassword, setRoomPassword] = useState('');
   const [name, setName] = useState('');
   const [totalPlayers, setTotalPlayers] = useState(2);
@@ -382,7 +384,11 @@ function HomeInner() {
                 × 閉じる
               </button>
             </div>
-            <div className="overflow-y-auto flex-1 p-4 space-y-5 text-sm">
+            <div
+              ref={rulesScrollRef}
+              onScroll={e => setShowRulesBackToTop((e.currentTarget as HTMLDivElement).scrollTop > 150)}
+              className="overflow-y-auto flex-1 p-4 space-y-5 text-sm relative"
+            >
 
               <section>
                 <h3 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'rgba(180,83,9,0.6)' }}>ゲームの進め方</h3>
@@ -495,6 +501,16 @@ function HomeInner() {
                   <p className="font-semibold" style={{ color: '#fbbf24' }}>最後に残った1人が勝利</p>
                 </div>
               </section>
+
+              {showRulesBackToTop && (
+                <button
+                  onClick={() => rulesScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+                  className="w-full py-2 rounded text-sm font-semibold transition-opacity"
+                  style={{ background: 'rgba(180,83,9,0.3)', border: '1px solid rgba(180,83,9,0.4)', color: 'rgba(251,191,36,0.8)' }}
+                >
+                  ↑ トップへ戻る
+                </button>
+              )}
 
               <button
                 onClick={() => setShowRules(false)}
