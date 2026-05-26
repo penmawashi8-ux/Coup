@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Suspense } from 'react';
 import type { LobbyEntry } from '@/lib/types';
@@ -47,13 +47,6 @@ function LobbyInner() {
   const [error, setError] = useState('');
   const [joining, setJoining] = useState(false);
   const [placeholder] = useState(randomName);
-  const [showBackToTop, setShowBackToTop] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setShowBackToTop(window.scrollY > 200);
-    window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
 
   const fetchRooms = useCallback(async () => {
     try {
@@ -239,19 +232,16 @@ function LobbyInner() {
         </div>
 
         {error && <p className="text-sm text-center" style={{ color: '#f87171' }}>{error}</p>}
-      </div>
 
-      {/* Back to top */}
-      {showBackToTop && (
+        {/* Back to top */}
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="fixed bottom-6 right-5 z-40 flex items-center justify-center w-10 h-10 rounded-full transition-opacity"
-          style={{ background: 'rgba(180,83,9,0.85)', border: '1px solid rgba(251,191,36,0.4)', color: '#fbbf24', boxShadow: '0 2px 12px rgba(0,0,0,0.5)' }}
-          aria-label="トップへ戻る"
+          className="w-full py-3 rounded text-sm font-semibold"
+          style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(120,53,15,0.35)', color: 'rgba(180,83,9,0.7)' }}
         >
-          ↑
+          ↑ トップへ戻る
         </button>
-      )}
+      </div>
 
       {/* Password modal */}
       {pendingRoom && (
