@@ -168,7 +168,7 @@ function HomeInner() {
   const inputStyle = { background: 'rgba(0,0,0,0.5)', borderColor: 'rgba(180,83,9,0.4)', color: '#fff' };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
+    <div className="min-h-screen flex flex-col items-center justify-center relative overflow-x-hidden"
       style={{ background: '#080503' }}>
 
       {/* Spotlight beam */}
