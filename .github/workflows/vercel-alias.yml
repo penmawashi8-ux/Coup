@@ -1,0 +1,14 @@
+name: Vercel Alias
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  alias:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+      - name: Set alias
+        run: vercel alias set bouryaku-two.vercel.app coup.boardgamecat.com --token ${{ secrets.VERCEL_TOKEN }}
