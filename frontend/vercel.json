@@ -3,6 +3,7 @@
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
   "installCommand": "npm install",
+  "alias": ["bouryaku.boardgamecat.com"],
   "headers": [
     {
       "source": "/(.*)",
