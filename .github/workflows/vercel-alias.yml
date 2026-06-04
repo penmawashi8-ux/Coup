@@ -1,14 +1,17 @@
-name: Vercel Alias
+name: Register Vercel Domain
 
 on:
   push:
     branches: [main]
 
 jobs:
-  alias:
+  register-domain:
     runs-on: ubuntu-latest
     steps:
-      - name: Install Vercel CLI
-        run: npm install -g vercel@latest
-      - name: Set alias
-        run: vercel alias set bouryaku-two.vercel.app bouryaku.boardgamecat.com --token ${{ secrets.VERCEL_TOKEN }}
+      - name: Register bouryaku.boardgamecat.com as custom domain
+        run: |
+          curl -s -X POST "https://api.vercel.com/v9/projects/bouryaku-two/domains" \
+            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"name": "bouryaku.boardgamecat.com"}' \
+            | tee /dev/stderr | grep -q '"name"'
