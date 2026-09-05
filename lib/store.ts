@@ -8,7 +8,16 @@ declare global {
   var __gameRooms: Map<string, GameState> | undefined;
   // eslint-disable-next-line no-var
   var __blobBaseUrl: string | undefined;
+  // True once the base URL has been confirmed by put()/list() or a 200 read.
+  // Until then a 404 might just mean we guessed the wrong host.
+  var __blobBaseUrlVerified: boolean | undefined;
+  var __roomListedAt: number | undefined;
 }
+
+// list() is a Blob *advanced operation*. Game boards poll every 1.5s, so a
+// per-request list() for a room that does not exist (stale share link, expired
+// room) costs 2,400 operations per hour per open tab. Rate-limit discovery.
+const LIST_DISCOVERY_COOLDOWN_MS = 5 * 60 * 1000;
 
 function getMemoryRooms(): Map<string, GameState> {
   if (!global.__gameRooms) global.__gameRooms = new Map();
@@ -55,15 +64,26 @@ async function blobGet(id: string): Promise<GameState | null> {
         cache: 'no-store',
         headers: authHeaders(),
       });
-      if (res.ok) return res.json() as Promise<GameState>;
-      // Don't short-circuit on 404 — fall through to list() in case the derived URL is stale/wrong
+      if (res.ok) {
+        global.__blobBaseUrlVerified = true;
+        return res.json() as Promise<GameState>;
+      }
+      // Once the base URL is known good, a 404 simply means "no such room".
+      if (res.status === 404 && global.__blobBaseUrlVerified) return null;
     }
-    // Fallback: discover via list() for non-standard token formats
+
+    // Fallback: discover via list() for non-standard token formats.
+    // Advanced operation — at most one per cooldown window per instance.
+    const now = Date.now();
+    if (now - (global.__roomListedAt ?? 0) < LIST_DISCOVERY_COOLDOWN_MS) return null;
+    global.__roomListedAt = now;
+
     const { list } = await import('@vercel/blob');
-    const { blobs } = await list({ prefix: blobPath(id) });
+    const { blobs } = await list({ prefix: blobPath(id), limit: 1 });
     if (blobs.length === 0) return null;
     // Cache the real base URL from the list result URL
     global.__blobBaseUrl = blobs[0].url.replace(`/${blobPath(id)}`, '');
+    global.__blobBaseUrlVerified = true;
     const res = await fetch(`${blobs[0].url}?_=${Date.now()}`, {
       cache: 'no-store',
       headers: authHeaders(),
@@ -80,9 +100,9 @@ async function blobSet(id: string, state: GameState): Promise<void> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const opts: any = { access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json' };
   const result = await put(blobPath(id), JSON.stringify(state), opts);
-  if (!global.__blobBaseUrl) {
-    global.__blobBaseUrl = result.url.replace(`/${blobPath(id)}`, '');
-  }
+  // put() returns the authoritative URL — trust it over any derived guess.
+  global.__blobBaseUrl = result.url.replace(`/${blobPath(id)}`, '');
+  global.__blobBaseUrlVerified = true;
 }
 
 export async function getRoom(id: string): Promise<GameState | null> {
