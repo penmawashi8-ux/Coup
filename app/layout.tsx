@@ -13,7 +13,9 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const BASE_URL = 'https://bouryaku-two.vercel.app';
+// 公開ドメイン。vercel.app のURLを入れると canonical と og:url が
+// 実際に配信しているホストと食い違うため、カスタムドメインを使う。
+const BASE_URL = 'https://bouryaku.boardgamecat.com';
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
@@ -38,8 +40,14 @@ export const metadata: Metadata = {
     title: '謀略 | ブラフ × 心理戦カードゲーム',
     description: '将軍・刺客・海賊・忍者・女王の5キャラで読み合うブラフカードゲーム。CPU対戦・オンライン対戦が無料で遊べる。',
   },
+  // このサブドメインはゲーム本体で、クローラーが読める本文がほとんどない
+  // （サーバー側描画のテキストは十数文字）。審査対象ドメイン boardgamecat.com に
+  // 本文のないページを並べることになり、AdSense の
+  // 「screens without publisher-content」に当たるため検索インデックスから外す。
+  // 説明文を持つ正規のページは https://boardgamecat.com/games/coup 側。
+  // follow は残し、トップへ戻るリンクの評価は渡す。
   robots: {
-    index: true,
+    index: false,
     follow: true,
   },
 };
