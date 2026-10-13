@@ -48,10 +48,13 @@ export async function POST(req: Request) {
       console.error('[lobby] addLobbyEntry failed:', e);
     }
 
-    await setRoom(roomId, state);
+    await setRoom(roomId, state, { force: true });
     return NextResponse.json({ roomId, playerId: hostId, lobbyError });
   }
 
-  await setRoom(roomId, state);
+  // CPU対戦は誰とも共有されず、クライアントもポーリングしない。
+  // store.ts がこの印を見て blob への書き込み回数を間引く。
+  state.isCPUOnly = true;
+  await setRoom(roomId, state, { force: true });
   return NextResponse.json({ roomId, playerId: hostId });
 }
