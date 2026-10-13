@@ -77,6 +77,11 @@ export interface GameState {
   password?: string;
   isPublic?: boolean;
   skipTimeoutSec?: number;
+  // CPU対戦（人間1人）として作られた部屋。
+  // この部屋は誰とも共有されず、クライアントがポーリングもしないので、
+  // 保存先のblobはページを再読み込みしたときしか読まれない。
+  // store.ts が書き込み回数を間引くのに使う。
+  isCPUOnly?: boolean;
 }
 
 export interface LobbyEntry {

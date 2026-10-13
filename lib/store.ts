@@ -12,12 +12,28 @@ declare global {
   // Until then a 404 might just mean we guessed the wrong host.
   var __blobBaseUrlVerified: boolean | undefined;
   var __roomListedAt: number | undefined;
+  // 部屋ごとの「最後にblobへ書いた時刻」。CPU対戦の間引きに使う。
+  var __roomWroteAt: Map<string, number> | undefined;
 }
 
 // list() is a Blob *advanced operation*. Game boards poll every 1.5s, so a
 // per-request list() for a room that does not exist (stale share link, expired
 // room) costs 2,400 operations per hour per open tab. Rate-limit discovery.
 const LIST_DISCOVERY_COOLDOWN_MS = 5 * 60 * 1000;
+
+// put() も Blob の *advanced operation*（無料枠は月2,000回）。
+//
+// CPU対戦は ?online=1 が付かず GameBoard がポーリングしないため、
+// 保存したstateが読まれるのはページを再読み込みしたときだけ。
+// それなのに1手ごとに put() していたので、1局（50〜150手）で
+// 無料枠の数%を使い切っていた。
+//
+// そこでCPU対戦では書き込みを間引く。間引いても、
+// ・部屋の作成時
+// ・ゲーム終了時
+// ・前回の書き込みから一定時間が経ったとき
+// は必ず書くので、再読み込みで戻れる範囲は最大でこの間隔ぶん。
+const CPU_GAME_WRITE_INTERVAL_MS = 10 * 1000;
 
 function getMemoryRooms(): Map<string, GameState> {
   if (!global.__gameRooms) global.__gameRooms = new Map();
@@ -124,13 +140,40 @@ export async function getRoom(id: string): Promise<GameState | null> {
   return getMemoryRooms().get(id) ?? null;
 }
 
-export async function setRoom(id: string, state: GameState): Promise<void> {
+function getWroteAt(): Map<string, number> {
+  if (!global.__roomWroteAt) global.__roomWroteAt = new Map();
+  return global.__roomWroteAt;
+}
+
+/**
+ * CPU対戦のときだけ、blobへの書き込みを間引いてよいか判定する。
+ * オンライン対戦は相手がこのblobを読むので、常に書く。
+ * isCPUOnly が無い古い部屋も、安全側に倒して常に書く。
+ */
+function shouldSkipBlobWrite(id: string, state: GameState): boolean {
+  if (state.isCPUOnly !== true) return false;
+  if (state.phase === 'game_over') return false;
+
+  const now = Date.now();
+  const last = getWroteAt().get(id);
+  if (last !== undefined && now - last < CPU_GAME_WRITE_INTERVAL_MS) return true;
+  return false;
+}
+
+export async function setRoom(
+  id: string,
+  state: GameState,
+  opts: { force?: boolean } = {},
+): Promise<void> {
   getMemoryRooms().set(id, state);
-  if (useBlob()) {
-    try {
-      await blobSet(id, state);
-    } catch (e) {
-      console.error('[store] blob write failed:', e);
-    }
+  if (!useBlob()) return;
+
+  if (!opts.force && shouldSkipBlobWrite(id, state)) return;
+
+  try {
+    await blobSet(id, state);
+    getWroteAt().set(id, Date.now());
+  } catch (e) {
+    console.error('[store] blob write failed:', e);
   }
 }
