@@ -12,8 +12,6 @@ declare global {
   // Until then a 404 might just mean we guessed the wrong host.
   var __blobBaseUrlVerified: boolean | undefined;
   var __roomListedAt: number | undefined;
-  // 部屋ごとの「最後にblobへ書いた時刻」。CPU対戦の間引きに使う。
-  var __roomWroteAt: Map<string, number> | undefined;
 }
 
 // list() is a Blob *advanced operation*. Game boards poll every 1.5s, so a
@@ -28,12 +26,15 @@ const LIST_DISCOVERY_COOLDOWN_MS = 5 * 60 * 1000;
 // それなのに1手ごとに put() していたので、1局（50〜150手）で
 // 無料枠の数%を使い切っていた。
 //
-// そこでCPU対戦では書き込みを間引く。間引いても、
-// ・部屋の作成時
-// ・ゲーム終了時
-// ・前回の書き込みから一定時間が経ったとき
-// は必ず書くので、再読み込みで戻れる範囲は最大でこの間隔ぶん。
-const CPU_GAME_WRITE_INTERVAL_MS = 10 * 1000;
+// 最初は「10秒に1回まで」の間引きにしたが、これは効かなかった。
+// 最後に書いた時刻を global に持っていたのに、Vercelのサーバーレスは
+// リクエストごとに別のインスタンスへ割り振られることがあり、
+// 新しいインスタンスでは記録が空なので毎回「初回」と判定されてしまう。
+//
+// そこでCPU対戦では部屋の作成時以外は blob に書かないことにした。
+// 途中経過はクライアント側（sessionStorage）が持つので、
+// 再読み込みしても続きから再開できる。
+// → components/GameBoard.tsx の saveLocalState / loadLocalState
 
 function getMemoryRooms(): Map<string, GameState> {
   if (!global.__gameRooms) global.__gameRooms = new Map();
@@ -140,24 +141,16 @@ export async function getRoom(id: string): Promise<GameState | null> {
   return getMemoryRooms().get(id) ?? null;
 }
 
-function getWroteAt(): Map<string, number> {
-  if (!global.__roomWroteAt) global.__roomWroteAt = new Map();
-  return global.__roomWroteAt;
-}
-
 /**
- * CPU対戦のときだけ、blobへの書き込みを間引いてよいか判定する。
- * オンライン対戦は相手がこのblobを読むので、常に書く。
+ * CPU対戦は誰とも共有されず、クライアントがポーリングもしないので、
+ * 途中経過を blob に残す必要がない。部屋を作るときの1回だけ書く
+ * （force=true。これが無いと /r/[roomId] が部屋を見つけられない）。
+ *
+ * オンライン対戦は相手がこの blob を読むので常に書く。
  * isCPUOnly が無い古い部屋も、安全側に倒して常に書く。
  */
-function shouldSkipBlobWrite(id: string, state: GameState): boolean {
-  if (state.isCPUOnly !== true) return false;
-  if (state.phase === 'game_over') return false;
-
-  const now = Date.now();
-  const last = getWroteAt().get(id);
-  if (last !== undefined && now - last < CPU_GAME_WRITE_INTERVAL_MS) return true;
-  return false;
+function shouldSkipBlobWrite(state: GameState): boolean {
+  return state.isCPUOnly === true;
 }
 
 export async function setRoom(
@@ -168,11 +161,10 @@ export async function setRoom(
   getMemoryRooms().set(id, state);
   if (!useBlob()) return;
 
-  if (!opts.force && shouldSkipBlobWrite(id, state)) return;
+  if (!opts.force && shouldSkipBlobWrite(state)) return;
 
   try {
     await blobSet(id, state);
-    getWroteAt().set(id, Date.now());
   } catch (e) {
     console.error('[store] blob write failed:', e);
   }

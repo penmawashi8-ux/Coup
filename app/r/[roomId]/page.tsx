@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getRoom } from '@/lib/store';
-import GameBoard from '@/components/GameBoard';
+import GameBoardLoader from '@/components/GameBoardLoader';
 
 interface Props {
   params: Promise<{ roomId: string }>;
@@ -13,14 +13,16 @@ export default async function GamePage({ params, searchParams }: Props) {
 
   if (!pid) redirect('/');
 
+  // 部屋が引けなくてもここでは弾かない。
+  // CPU対戦の続きはクライアントの sessionStorage にあるので、
+  // GameBoardLoader に判断を任せる（どちらにも無ければトップへ戻す）。
   const state = await getRoom(roomId);
-  if (!state) redirect('/');
 
   return (
-    <GameBoard
+    <GameBoardLoader
       roomId={roomId}
       playerId={pid}
-      initialState={state}
+      serverState={state}
       isOnline={online === '1'}
     />
   );

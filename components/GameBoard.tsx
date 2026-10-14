@@ -4,6 +4,7 @@ import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react
 import type { GameState, ActionType, Character } from '@/lib/types';
 import CardDisplay from './CardDisplay';
 import { sounds } from '@/lib/sounds';
+import { saveLocalState } from '@/lib/local-room';
 
 interface Props {
   roomId: string;
@@ -178,6 +179,12 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
       logRef.current.scrollTop = logRef.current.scrollHeight;
     }
   }, [state.log]);
+
+  // CPU対戦の途中経過を保存する。オンライン対戦はサーバーが持つので触らない。
+  // 保存した続きは GameBoardLoader が次回の入口で読み戻す。
+  useEffect(() => {
+    if (!isOnline) saveLocalState(roomId, state);
+  }, [isOnline, roomId, state]);
 
   // useLayoutEffect: fires before paint so tickerActive is true before game-over screen can render
   useLayoutEffect(() => {

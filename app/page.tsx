@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import CoupHeroImage from '@/components/CoupHeroImage';
+import { saveLocalState } from '@/lib/local-room';
+import type { GameState } from '@/lib/types';
 
 const RANDOM_NAMES = [
   'スパイ', '詐欺師', '公爵', '大使', '伯爵', '革命家',
@@ -17,13 +19,23 @@ function randomName() {
   return RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)];
 }
 
-async function apiPost(url: string, body: unknown): Promise<{ ok: boolean; data: Record<string, string> }> {
+// /api/room が返しうる項目。Record<string, string> にしていたが、
+// state（オブジェクト）を受け取るようになったので実体に合わせる。
+interface ApiResponse {
+  roomId?: string;
+  playerId?: string;
+  state?: GameState;
+  error?: string;
+  lobbyError?: string;
+}
+
+async function apiPost(url: string, body: unknown): Promise<{ ok: boolean; data: ApiResponse }> {
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  let data: Record<string, string> = {};
+  let data: ApiResponse = {};
   try { data = await res.json(); } catch { /* non-JSON error body */ }
   return { ok: res.ok, data };
 }
@@ -137,6 +149,10 @@ function HomeInner() {
     });
     setLoading(false);
     if (!ok) { setError(data.error ?? 'エラーが発生しました'); return; }
+    // 作った部屋の状態をこのタブに控えてから移動する。
+    // blob が止まっていてサーバー側から部屋を引けない場合でも、
+    // これがあればゲームを始められる。
+    if (data.roomId && data.state) saveLocalState(data.roomId, data.state);
     router.push(`/r/${data.roomId}?pid=${data.playerId}`);
   }
 

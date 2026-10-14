@@ -53,8 +53,10 @@ export async function POST(req: Request) {
   }
 
   // CPU対戦は誰とも共有されず、クライアントもポーリングしない。
-  // store.ts がこの印を見て blob への書き込み回数を間引く。
+  // store.ts がこの印を見て、作成時以外は blob に書かないようにする。
   state.isCPUOnly = true;
   await setRoom(roomId, state, { force: true });
-  return NextResponse.json({ roomId, playerId: hostId });
+  // state も返す。blob が落ちていてサーバー側から部屋を引けない場合でも、
+  // クライアントがこれを持っていればゲームを始められる。
+  return NextResponse.json({ roomId, playerId: hostId, state });
 }
