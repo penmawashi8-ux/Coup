@@ -53,10 +53,21 @@ export async function POST(req: Request) {
   }
 
   // CPU対戦は誰とも共有されず、クライアントもポーリングしない。
-  // store.ts がこの印を見て、作成時以外は blob に書かないようにする。
+  // store.ts がこの印を見て blob に書かないようにする。
   state.isCPUOnly = true;
-  await setRoom(roomId, state, { force: true });
-  // state も返す。blob が落ちていてサーバー側から部屋を引けない場合でも、
+  //
+  // 以前はここだけ force で1回書いていた（/r/[roomId] が部屋を引けるように）。
+  // その後それは要らなくなっている。
+  //   ・/r/[roomId] は部屋が引けなくても弾かず、GameBoardLoader に任せる
+  //   ・手を進める /api/room/[id]/action は、CPU対戦なら必ず clientState を使い
+  //     保存先を読みにいかない
+  //   ・盤面は下で返す state をブラウザが sessionStorage に控える
+  // 一方で put() は Blob の advanced operation（無料枠は月2,000回）で、
+  // 部屋を作るだけで1回使う。アクセスが1日200件を超えると
+  // 作成だけで数日で枠を使い切り、オンライン対戦ごと止まってしまう。
+  // 読まれない書き込みにその枠を使う理由がないのでやめる。
+  await setRoom(roomId, state);
+  // state も返す。サーバー側から部屋を引けなくても、
   // クライアントがこれを持っていればゲームを始められる。
   return NextResponse.json({ roomId, playerId: hostId, state });
 }
