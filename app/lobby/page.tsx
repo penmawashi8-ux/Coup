@@ -1,8 +1,9 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Suspense } from 'react';
 import type { LobbyEntry } from '@/lib/types';
+import { usePolling } from '@/lib/use-polling';
 
 const RANDOM_NAMES = [
   'スパイ', '詐欺師', '公爵', '大使', '伯爵', '革命家',
@@ -57,11 +58,11 @@ function LobbyInner() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchRooms();
-    const t = setInterval(fetchRooms, 3000);
-    return () => clearInterval(t);
-  }, [fetchRooms]);
+  // 部屋の一覧は10秒おき。画面が隠れている間は止める。
+  // 3秒おきだとタブを開いているだけで1時間1,200回になり、
+  // CDNリクエストの無料枠（月100万回）をこれだけで食う。
+  // 部屋が並ぶのが数秒遅れても待っている側は困らない。
+  usePolling(fetchRooms, 10_000);
 
   async function doJoin(roomId: string, pw?: string) {
     const playerName = name.trim() || placeholder;

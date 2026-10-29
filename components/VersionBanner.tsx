@@ -1,28 +1,34 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
+import { usePolling } from '@/lib/use-polling';
+
+// 新しいバージョンが出ていないかの確認間隔。
+//
+// 90秒おきにしていたので、開いているタブ1つあたり1時間40回。
+// 更新はめったに出ないのに、CDNリクエストの無料枠（月100万回）を
+// 遊んでいる全員ぶん削っていた。30分あれば十分で、
+// 画面が隠れている間は usePolling が止めてくれる。
+const CHECK_INTERVAL_MS = 30 * 60_000;
 
 export default function VersionBanner() {
   const [show, setShow] = useState(false);
   const knownVersion = useRef<string | null>(null);
 
-  useEffect(() => {
-    async function check() {
-      try {
-        const res = await fetch('/api/version', { cache: 'no-store' });
-        if (!res.ok) return;
-        const { version } = await res.json() as { version: string };
-        if (knownVersion.current === null) {
-          knownVersion.current = version;
-        } else if (knownVersion.current !== version) {
-          setShow(true);
-        }
-      } catch { /* ignore network errors */ }
-    }
+  const check = useCallback(async () => {
+    if (show) return; // 一度気づいたらもう確認しなくてよい
+    try {
+      const res = await fetch('/api/version', { cache: 'no-store' });
+      if (!res.ok) return;
+      const { version } = await res.json() as { version: string };
+      if (knownVersion.current === null) {
+        knownVersion.current = version;
+      } else if (knownVersion.current !== version) {
+        setShow(true);
+      }
+    } catch { /* ignore network errors */ }
+  }, [show]);
 
-    check();
-    const id = setInterval(check, 90_000); // every 90 s
-    return () => clearInterval(id);
-  }, []);
+  usePolling(check, CHECK_INTERVAL_MS);
 
   if (!show) return null;
 

@@ -5,6 +5,7 @@ import type { GameState, ActionType, Character } from '@/lib/types';
 import CardDisplay from './CardDisplay';
 import { sounds } from '@/lib/sounds';
 import { saveLocalState } from '@/lib/local-room';
+import { usePolling } from '@/lib/use-polling';
 
 interface Props {
   roomId: string;
@@ -90,7 +91,6 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
   const [lobbyCpuCount, setLobbyCpuCount] = useState(0);
   const [elapsedSec, setElapsedSec] = useState(0);
   const logRef = useRef<HTMLDivElement>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const prevLogRef = useRef<string[]>([...initialState.log]);
   const tickerQueueRef = useRef<string[]>([]);
   const tickerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -167,12 +167,9 @@ export default function GameBoard({ roomId, playerId, initialState, isOnline }: 
     } catch { /* silent */ }
   }, [roomId, isOnline]);
 
-  useEffect(() => {
-    if (isOnline) {
-      pollRef.current = setInterval(poll, 1500);
-      return () => { if (pollRef.current) clearInterval(pollRef.current); };
-    }
-  }, [isOnline, poll]);
+  // 遊んでいる間は1.5秒おき。画面が隠れている間は止める
+  // （誰も見ていない盤面のために1時間2,400回を使ってしまうため）。
+  usePolling(poll, isOnline ? 1500 : null);
 
   useEffect(() => {
     if (logRef.current) {
